@@ -10,6 +10,10 @@
     <PackageReference Include="Fluxor" Version="5.0.0" />
     <PackageReference Include="Fluxor.Blazor.Web" Version="5.0.0" />
     <PackageReference Include="Fluxor.Blazor.Web.ReduxDevTools" Version="5.0.0" />
+    <PackageReference Include="MongoDB.Driver" Version="2.14.1" />
+    <PackageReference Include="MudBlazor" Version="6.0.6" />
+    <PackageReference Include="Syncfusion.Blazor" Version="19.4.0.52" />
+    <PackageReference Include="Syncfusion.Blazor.Themes" Version="19.4.0.52" />
     <PackageReference Include="xFFmpeg.NET" Version="7.0.1" />
   </ItemGroup>
 

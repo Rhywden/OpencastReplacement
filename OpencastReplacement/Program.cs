@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using OpencastReplacement.Services;
 using Fluxor;
+using OpencastReplacement.Data;
+using Syncfusion.Blazor;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,8 +22,14 @@ builder.Services.AddFluxor(opt =>
 });
 
 builder.Services.AddSingleton<IFfmpegWrapper>(sp => new FfmpegWrapper(pathToExecutable: Configuration["ffmpeg:exepath"], pathToStorageFolder: Configuration["ffmpeg:storagepath"]));
+builder.Services.AddSingleton<IMongoConnection>(mc => new MongoConnection(Configuration["mongodb:connection"]));
+
+builder.Services.AddSyncfusionBlazor(options => { options.IgnoreScriptIsolation = true; });
+builder.Services.AddMudServices();
 
 var app = builder.Build();
+
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("NTg1MDc3QDMxMzkyZTM0MmUzME9MYitEYlJsK1FOWDlHUkZQdGc4dGZVNmxXL1FwOFNJZHd2UFBEbnpMeHc9");
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
