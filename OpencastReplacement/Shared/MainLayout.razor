@@ -11,6 +11,7 @@
     <MudAppBar>
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
         Videos an der BS18
+        <Account />
     </MudAppBar>
     <MudDrawer  @bind-Open="@_drawerOpen">
         <NavMenu />

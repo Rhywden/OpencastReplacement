@@ -1,0 +1,21 @@
+﻿@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<AuthorizeView Roles="admin,lehrer">
+    <Authorized>
+        Hallo @user?.Identity?.Name
+        <MudButton Link="logout">Logout</MudButton>
+    </Authorized>
+    <NotAuthorized>
+        <MudButton Link="login">Login</MudButton>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private ClaimsPrincipal? user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+    }
+}

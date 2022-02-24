@@ -1,29 +1,18 @@
-﻿@page "/"
-@using System.Security.Claims
+﻿@using OpencastReplacement.Pages.IndexPages
 
-@inject AuthenticationStateProvider AuthenticationStateProvider
-
+@page "/"
 <PageTitle>Index</PageTitle>
 
 
-<AuthorizeView>
+<AuthorizeView Roles="admin,lehrer">
     <Authorized>
-        @if(user?.IsInRole("admin") == true)
-        {
-            <span>Admin</span>
-        }
-        <a href="logout">Logout starten</a>
+        <Upload />
     </Authorized>
     <NotAuthorized>
-        <a href="login">Login starten</a>
+        Bitte einloggen
     </NotAuthorized>
 </AuthorizeView>
 
 @code {
-    private ClaimsPrincipal? user;
 
-    protected override async Task OnInitializedAsync()
-    {
-        user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
-    }
 }
