@@ -18,13 +18,13 @@ namespace OpencastReplacement.Services
             _queueForUpload = new();
         }
 
-        public async ValueTask QueueFileForEncoding(Video video)
+        public async Task QueueFileForEncoding(Video video)
         {
             _queueForUpload.Enqueue(video);
             await _taskQueue.QueueBackgroundWorkItemAsync(BuildWorkItem);
         }
 
-        private async ValueTask BuildWorkItem(CancellationToken cancellationToken)
+        private async Task BuildWorkItem(CancellationToken cancellationToken)
         {
             Video? video;
             if(_queueForUpload.TryDequeue(out video))

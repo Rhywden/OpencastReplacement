@@ -4,13 +4,13 @@ namespace OpencastReplacement.Services
 {
     public interface IBackgroundTaskQueue
     {
-        ValueTask QueueBackgroundWorkItemAsync(Func<CancellationToken, ValueTask> workItem);
-        ValueTask<Func<CancellationToken, ValueTask>> DequeueAsync(CancellationToken cancellationToken);
+        Task QueueBackgroundWorkItemAsync(Func<CancellationToken, Task> workItem);
+        Task<Func<CancellationToken, Task>> DequeueAsync(CancellationToken cancellationToken);
     }
 
     public class BackgroundTaskQueue : IBackgroundTaskQueue
     {
-        private readonly Channel<Func<CancellationToken, ValueTask>> _queue;
+        private readonly Channel<Func<CancellationToken, Task>> _queue;
 
         public BackgroundTaskQueue(int capacity)
         {
@@ -18,16 +18,16 @@ namespace OpencastReplacement.Services
             {
                 FullMode = BoundedChannelFullMode.Wait
             };
-            _queue = Channel.CreateBounded<Func<CancellationToken, ValueTask>>(options);
+            _queue = Channel.CreateBounded<Func<CancellationToken, Task>>(options);
         }
 
-        public async ValueTask<Func<CancellationToken, ValueTask>> DequeueAsync(CancellationToken cancellationToken)
+        public async Task<Func<CancellationToken, Task>> DequeueAsync(CancellationToken cancellationToken)
         {
             var workItem = await _queue.Reader.ReadAsync(cancellationToken);
             return workItem;
         }
 
-        public async ValueTask QueueBackgroundWorkItemAsync(Func<CancellationToken, ValueTask> workItem)
+        public async Task QueueBackgroundWorkItemAsync(Func<CancellationToken, Task> workItem)
         {
             if (workItem == null)
             {

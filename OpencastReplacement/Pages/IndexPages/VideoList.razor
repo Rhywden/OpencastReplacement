@@ -1,0 +1,19 @@
+﻿@using Fluxor
+@using Store.VideoUseCase
+
+@inherits Fluxor.Blazor.Web.Components.FluxorComponent
+
+@code {
+    [Inject]
+    public IState<VideoState> State { get; set; } = default!;
+    [Inject]
+    private IDispatcher? Dispatcher { get; set; }
+
+    public VideoState VideoState => State.Value;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Dispatcher?.Dispatch(new FetchVideosAction());
+    }
+}
