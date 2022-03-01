@@ -6,12 +6,12 @@ namespace OpencastReplacement.Store.ConversionUseCase
     {
         [ReducerMethod]
         public static ConversionState ReduceSetConversionProgressAction(ConversionState state, SetConversionProgressAction action) {
-            int index = state.ConversionsInProgress.FindIndex(c => c.ConversionId == action.ConversionId);
-            var list = state.ConversionsInProgress;
+            int index = state.ConversionsInQueue.FindIndex(c => c.ConversionId == action.ConversionId);
+            var list = state.ConversionsInQueue;
             if(index > -1)
             {
                 list[index] = list[index] with { Progress = action.Progress};
-                return state with { ConversionsInProgress = list };
+                return state with { ConversionsInQueue = list };
             } else
             {
                 return state;

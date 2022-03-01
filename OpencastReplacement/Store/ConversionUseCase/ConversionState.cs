@@ -7,6 +7,7 @@ namespace OpencastReplacement.Store.ConversionUseCase
     [FeatureState]
     public record ConversionState
     {
-        public ComparableList<Conversion> ConversionsInProgress { get; init; } = default!;
+        public ComparableList<Conversion> ConversionsInQueue { get; init; } = default!;
+        public Conversion ConversionProgress { get; init; } = default!;
     }
 }

@@ -1,4 +1,6 @@
-﻿@using Microsoft.Extensions.Logging
+﻿@page "/upload"
+
+@using Microsoft.Extensions.Logging
 @inject ILogger<Upload> Logger
 @inject IWebHostEnvironment Environment
 
@@ -6,7 +8,8 @@
 
 @if (isLoading)
 {
-    <p>Progress: @string.Format("{0:P0}", progressPercent)</p>
+    <MudProgressLinear Color="Color.Primary" Value="@progressInt" Class="my-7" />
+    <p>@progressInt</p>
 }
 else
 {
@@ -33,6 +36,7 @@ else
     private int maxAllowedFiles = 3;
     private bool isLoading;
     private decimal progressPercent;
+    private int progressInt;
     private string conversionProgress = "";
 
     private async Task LoadFiles(InputFileChangeEventArgs e)
@@ -62,6 +66,7 @@ else
                     await writeStream.WriteAsync(buffer, 0, bytesRead);
 
                     progressPercent = Decimal.Divide(totalRead, file.Size);
+                    progressInt = (int)progressPercent * 100;
 
                     StateHasChanged();
                 }
