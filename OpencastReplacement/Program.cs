@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Components.Web;
 using OpencastReplacement.Services;
 using Fluxor;
 using OpencastReplacement.Data;
-using Syncfusion.Blazor;
 using MudBlazor.Services;
 using Microsoft.Identity.Web.UI;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -45,7 +44,13 @@ builder.Services.AddFluxor(opt =>
 builder.Services.AddSingleton<IFfmpegWrapper>(sp => new FfmpegWrapper(pathToExecutable: Configuration["ffmpeg:exepath"], pathToStorageFolder: Configuration["ffmpeg:storagepath"]));
 builder.Services.AddSingleton<IMongoConnection>(mc => new MongoConnection(Configuration["mongodb:connection"]));
 
-builder.Services.AddSyncfusionBlazor(options => { options.IgnoreScriptIsolation = true; });
+builder.Services.AddHostedService<QueuedHostedService>();
+builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx =>
+{
+    return new BackgroundTaskQueue(100);
+});
+builder.Services.AddSingleton<FileQueueMonitor>();
+
 builder.Services.AddMudServices();
 
 builder.Services.AddAuthentication(options =>
@@ -66,7 +71,7 @@ builder.Services.AddAuthentication(options =>
     options.Scope.Add("email");
     //options.Scope.Add("roles");
     options.Scope.Add("offline_access");
-    options.ClaimActions.Add(new JsonKeyClaimAction("role", null, "role"));
+    options.ClaimActions.Add(new JsonKeyClaimAction("role", string.Empty, "role"));
     options.SaveTokens = true;
     options.GetClaimsFromUserInfoEndpoint = true;
     options.TokenValidationParameters = new TokenValidationParameters
@@ -93,8 +98,6 @@ builder.Services.AddAuthentication(options =>
 });
 
 var app = builder.Build();
-
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("NTg1MDc3QDMxMzkyZTM0MmUzME9MYitEYlJsK1FOWDlHUkZQdGc4dGZVNmxXL1FwOFNJZHd2UFBEbnpMeHc9");
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

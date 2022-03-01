@@ -1,6 +1,4 @@
-﻿@using FFmpeg.NET
-@using FFmpeg.NET.Events
-@using Microsoft.Extensions.Logging
+﻿@using Microsoft.Extensions.Logging
 @inject ILogger<Upload> Logger
 @inject IWebHostEnvironment Environment
 
@@ -69,7 +67,6 @@ else
                 }
 
                 loadedFiles.Add(file);
-                await StartEncoding(file.Name);
             }
             catch (Exception ex)
             {
@@ -79,24 +76,5 @@ else
         }
 
         isLoading = false;
-    }
-
-    private async Task StartEncoding(string filename)
-    {
-        var path = Path.Combine(Environment.ContentRootPath,
-                    "wwwroot","uploads", filename);
-        var outputpath = Path.Combine(Environment.ContentRootPath,
-                    "wwwroot","uploads", "encoded_file.mp4");
-        var inputfile = new FFmpeg.NET.InputFile(path);
-        var outputfile = new FFmpeg.NET.OutputFile(outputpath);
-        var ffmpeg = new Engine("C:\\ffmpeg\\ffmpeg.exe");
-        ffmpeg.Progress += OnProgress;
-        var cancelToken = new CancellationToken();
-        await ffmpeg.ConvertAsync(inputfile, outputfile, cancelToken);
-    }
-    private void OnProgress(object? sender, ConversionProgressEventArgs e)
-    {
-        conversionProgress = $"Bitrate: {e.Bitrate}, FPS: {e.Fps}, Frame: {e.Frame} ProcessedDuration: {e.ProcessedDuration} Size: {e.SizeKb} TotalDuration: {e.TotalDuration}";
-        InvokeAsync(StateHasChanged);
     }
 }
