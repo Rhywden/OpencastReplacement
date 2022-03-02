@@ -4,46 +4,102 @@
 @inject ILogger<Upload> Logger
 @inject IWebHostEnvironment Environment
 
-<InputFile OnChange="@LoadFiles" multiple />
+<style>
+    .drag-drop-zone {
+        display: flex;align-items: center;justify-content: center;transition: all .4s;min-height: 400px;
+    }
+    .drag-drop-input {
+        position: absolute;width: 100%;height: 90%;opacity: 0;cursor:pointer;
+        z-index:2;
+    }
+    .drag-enter {
+        box-shadow: var(--mud-elevation-10);
+    }
+    .list{
+        padding:2em;min-width:100%;
+    }
+</style>
 
+<MudPaper @ondragenter="@(()=>_dragEnterStyle="drag-enter")"
+          @ondragleave="@(()=>_dragEnterStyle=null)"
+          @ondragend="@(()=>_dragEnterStyle=null)"
+          Class=@("drag-drop-zone "+ _dragEnterStyle)>
+
+    <InputFile OnChange="@LoadFiles" multiple class="drag-drop-input" />
+
+    @if (loadedFiles.Count() == 0)
+        {
+            <MudText Typo="Typo.h3">Drag and drop files here or click</MudText> 
+        }else
+        {
+            <MudList Style="padding:2em;width:100%;" Dense="true" >
+                @foreach (var file in loadedFiles)
+                {
+                    <MudListItem @key="@file" >
+                       <MudChip Color="Color.Dark" 
+                                Style="width:60px; overflow:hidden;" 
+                                Text="@(file.Name.Split(".").Last())" />
+                       @file.Name
+                    </MudListItem>}
+            </MudList>
+        }
+</MudPaper>
+<MudGrid Justify="Justify.Center" Spacing="4">
+    <MudItem>
+        <MudButton OnClick="StartUpload" Disabled="@(!loadedFiles.Any())" Color="Color.Primary" Variant="Variant.Filled">Upload</MudButton>
+    </MudItem>
+    <MudItem>
+        <MudButton OnClick="@loadedFiles.Clear" Disabled="@(!loadedFiles.Any())" Color="Color.Error" Variant="Variant.Filled">Clear</MudButton>
+    </MudItem>
+</MudGrid>
 @if (isLoading)
 {
     <MudProgressLinear Color="Color.Primary" Value="@progressInt" Class="my-7" />
-    <p>@progressInt</p>
-}
-else
-{
-    <ul>
-        @foreach (var file in loadedFiles)
-        {
-            <li>
-                <ul>
-                    <li>Name: @file.Name</li>
-                    <li>Last modified: @file.LastModified.ToString()</li>
-                    <li>Size (bytes): @file.Size</li>
-                    <li>Content type: @file.ContentType</li>
-                </ul>
-            </li>
-        }
-    </ul>
 }
 
-<p>@conversionProgress</p>
+<MudTable Items="@loadedFiles" Breakpoint="Breakpoint.Sm" Hover="false">
+    <HeaderContent>
+        <MudTh>Name</MudTh>
+        <MudTh>Größe (MB)</MudTh>
+        <MudTh>Typ</MudTh>
+        <MudTh>Optionen</MudTh>
+        <MudTh>Tags</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Name">@context.Name</MudTd>
+        <MudTd DataLabel="Size">@context.Size</MudTd>
+        <MudTd DataLabel="Typ">@context.ContentType</MudTd>
+        <MudTd DataLabel="Options"><MudCheckBox @bind-Checked="Check480p" Label="480p"></MudCheckBox></MudTd>
+        <MudTd DataLabel="Tags"><MudChip Color="Color.Default" OnClose="OnClose">Physik</MudChip></MudTd>
+        <MudTd DataLabel="Actions"><MudButton>Start</MudButton><MudButton>Löschen</MudButton></MudTd>
+    </RowTemplate>
+</MudTable>
+
 
 @code {
+    private string? _dragEnterStyle;
+    private bool Check480p { get; set; }
     private List<IBrowserFile> loadedFiles = new();
     private long maxFileSize = 1024 * 1024 * 500;
     private int maxAllowedFiles = 3;
     private bool isLoading;
-    private decimal progressPercent;
     private int progressInt;
-    private string conversionProgress = "";
+
+    private async Task StartUpload()
+    {
+
+    }
+    private void OnClose(MudChip chip)
+    {
+        
+    }
 
     private async Task LoadFiles(InputFileChangeEventArgs e)
     {
         isLoading = true;
+        progressInt = 0;
         loadedFiles.Clear();
-        progressPercent = 0;
 
         foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
         {
@@ -65,8 +121,8 @@ else
 
                     await writeStream.WriteAsync(buffer, 0, bytesRead);
 
-                    progressPercent = Decimal.Divide(totalRead, file.Size);
-                    progressInt = (int)progressPercent * 100;
+                    var progressPercent = Decimal.Divide(totalRead, file.Size);
+                    progressInt = Decimal.ToInt16(progressPercent * 100);
 
                     StateHasChanged();
                 }
