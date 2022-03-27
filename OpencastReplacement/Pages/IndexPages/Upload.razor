@@ -1,8 +1,12 @@
 ﻿@page "/upload"
 
 @using Microsoft.Extensions.Logging
+@using OpencastReplacement.Models
+@using OpencastReplacement.Services
+
 @inject ILogger<Upload> Logger
 @inject IWebHostEnvironment Environment
+@inject FileQueueMonitor FileQueueMonitor
 
 <style>
     .drag-drop-zone {
@@ -92,7 +96,7 @@
     }
     private void OnClose(MudChip chip)
     {
-        
+
     }
 
     private async Task LoadFiles(InputFileChangeEventArgs e)
@@ -107,7 +111,7 @@
             {
                 //var trustedFileName = Path.GetRandomFileName();
                 var path = Path.Combine(Environment.ContentRootPath,
-                    "wwwroot","uploads", file.Name);
+                    "wwwroot","temp", file.Name);
 
                 await using FileStream writeStream = new(path, FileMode.Create);
                 using var readStream = file.OpenReadStream(maxFileSize);
@@ -126,6 +130,16 @@
 
                     StateHasChanged();
                 }
+
+                var video = new Video
+                {
+                    Duration = new TimeSpan(0,0,10),
+                    FileName = file.Name,
+                    FileSize = file.Size,
+
+                };
+
+                await FileQueueMonitor.QueueFileForEncoding(video);
 
                 loadedFiles.Add(file);
             }

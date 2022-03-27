@@ -41,7 +41,7 @@ builder.Services.AddFluxor(opt =>
     opt.UseReduxDevTools();
 });
 
-builder.Services.AddSingleton<IFfmpegWrapper>(sp => new FfmpegWrapper(pathToExecutable: Configuration["ffmpeg:exepath"], pathToStorageFolder: Configuration["ffmpeg:storagepath"]));
+builder.Services.AddSingleton<IFfmpegWrapper, FfmpegWrapper>();
 builder.Services.AddSingleton<IMongoConnection>(mc => new MongoConnection(Configuration["mongodb:connection"]));
 
 builder.Services.AddHostedService<QueuedHostedService>();
@@ -115,6 +115,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapControllers();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 

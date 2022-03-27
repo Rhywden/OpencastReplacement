@@ -8,6 +8,7 @@ namespace OpencastReplacement.Services
         private readonly IBackgroundTaskQueue _taskQueue;
         private readonly ILogger<FileQueueMonitor> _logger;
         private readonly IFfmpegWrapper _ffmpegWrapper;
+
         ConcurrentQueue<Video> _queueForUpload;
 
         public FileQueueMonitor(IBackgroundTaskQueue taskQueue, ILogger<FileQueueMonitor> logger, IFfmpegWrapper wrapper)
@@ -32,14 +33,13 @@ namespace OpencastReplacement.Services
                 _logger.LogInformation($"Queued Encoding is starting: {video.FileName}");
                 try
                 {
-                    string? message;
-                    var success = await _ffmpegWrapper.StartEncoding(video, out message);
+                    var success = await _ffmpegWrapper.StartEncoding(video);
                     if (success)
                     {
                         _logger.LogInformation($"Queued encoding for {video.FileName} was successful");
                     } else
                     {
-                        _logger.LogWarning($"Queued encoding for {video.FileName} failed, reason: {message}");
+                        _logger.LogWarning($"Queued encoding for {video.FileName} failed, reason: ");
                     }
                 } catch (Exception ex)
                 {
