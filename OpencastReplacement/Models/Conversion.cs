@@ -2,10 +2,10 @@
 {
     public record Conversion
     {
-        public Guid ConversionId { get; init; } = new Guid();
-        public int Progress { get; init; }
-        public string FileName { get; init; } = default!;
-        public string UserName { get; init; } = default!;
+        public Guid ConversionId { get; init; } = Guid.NewGuid();
+        public double Progress { get; init; }
         public bool HasStarted { get; init; }
+        public Guid VideoId { get; init; } = Guid.NewGuid();
+        public string Filename { get; init; } = default!;
     }
 }

@@ -47,11 +47,13 @@ builder.Services.AddSingleton<IMongoConnection>(mc => new MongoConnection(Config
 builder.Services.AddSingleton<ConfigurationWrapper>(cm => new ConfigurationWrapper(Configuration));
 builder.Services.AddHostedService<QueuedHostedService>();
 builder.Services.AddSingleton<ConversionProgressEvent>();
+builder.Services.AddSingleton<VideoAddedEvent>();
 builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx =>
 {
     return new BackgroundTaskQueue(100);
 });
 builder.Services.AddSingleton<FileQueueMonitor>();
+builder.Services.AddSingleton<IDataRepository, DataRepository>();
 
 builder.Services.AddMudServices();
 
@@ -105,6 +107,10 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
+    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedProto
+    });
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
@@ -120,5 +126,13 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
+
+
+//Initial data loading
+Task.Factory.StartNew(async () =>
+{
+    var data = app.Services.GetService<IDataRepository>();
+    await data!.Init();
+});
 
 app.Run();

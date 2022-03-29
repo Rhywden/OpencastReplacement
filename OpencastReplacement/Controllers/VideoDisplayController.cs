@@ -1,4 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
+using OpencastReplacement.Data;
+using OpencastReplacement.Models;
 
 namespace OpencastReplacement.Controllers
 {
@@ -8,17 +11,24 @@ namespace OpencastReplacement.Controllers
     {
         private IWebHostEnvironment hostingEnv;
         private ILogger<VideoController> logger;
-        public VideoController(IWebHostEnvironment env, ILogger<VideoController> log)
+        private IMongoConnection connection;
+        public VideoController(IWebHostEnvironment env, ILogger<VideoController> log, IMongoConnection conn)
         {
             hostingEnv = env;
             logger = log;
+            connection = conn;
         }
 
         [HttpGet]
-        public IActionResult Get()
+        public IActionResult Get(string id)
         {
-            string title = "Test";
-            string pathToVideo = "/uploads/cymatics.mp4";
+            var coll = connection.Client.GetDatabase("videoserver").GetCollection<Video>("videos");
+            var filter = Builders<Video>.Filter.Eq("_id", id);
+            var res = coll.FindSync(filter);
+            var vid = res.FirstOrDefault();
+
+            string title = vid.FileName;
+            string pathToVideo = $"/uploads/{vid.FileName}";
             string output = string.Join(System.Environment.NewLine, new string[]
             {
                 "<!DOCTYPE html>",

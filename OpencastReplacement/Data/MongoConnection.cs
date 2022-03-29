@@ -1,4 +1,6 @@
-﻿using MongoDB.Bson.Serialization;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 
 namespace OpencastReplacement.Data
@@ -9,7 +11,7 @@ namespace OpencastReplacement.Data
 
         public MongoConnection(string connectionString)
         {
-            //BsonClassMap.RegisterClassMap<RocketchatMessage>();
+            BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
             BsonClassMap.RegisterClassMap<Models.Tag>();
             BsonClassMap.RegisterClassMap<Models.Video>();
             Client = new MongoClient(connectionString);

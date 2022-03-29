@@ -1,0 +1,62 @@
+﻿@using OpencastReplacement.Data
+@using OpencastReplacement.Models
+@using System.Security.Claims
+@inject IDataRepository DataRepository
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Neuen Tag einfügen</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudAutocomplete @bind-Value="value" T="string" Label="Tags" CoerceValue="true" SearchFunc="Search" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Save" Color="Color.Primary">Erstellen</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter] public Guid id { get; set; } = Guid.NewGuid();
+
+    private ClaimsPrincipal? user;
+
+    private string? value;
+
+    private List<string> list = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        //TODO Filter out private tags not for user
+        foreach(var tag in DataRepository.Tags)
+        {
+            if (!tag.IsPrivate || tag.UserId.Equals(user?.Identity?.Name))
+            {
+                list.Add(tag.Name);
+            }
+        }
+    }
+
+    private async Task<IEnumerable<string>> Search(string val)
+    {
+        if(string.IsNullOrWhiteSpace(val))
+        {
+            return list;
+        }
+        return list.Where(x => x.Contains(val, StringComparison.InvariantCultureIgnoreCase));
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void Save()
+    {
+        var res = new TagResult { Id = id, Tag = value ?? string.Empty };
+        MudDialog.Close(DialogResult.Ok(res));
+    }
+}

@@ -1,6 +1,7 @@
 ﻿using FFMpegCore;
 using FFMpegCore.Enums;
 using Fluxor;
+using OpencastReplacement.Data;
 using OpencastReplacement.Events;
 using OpencastReplacement.Models;
 
@@ -12,13 +13,25 @@ namespace OpencastReplacement.Services
         private ILogger<FfmpegWrapper> logger;
         private ConfigurationManager configurationManager;
         private ConversionProgressEvent conversionProgressEvent;
+        private VideoAddedEvent videoAddedEvent;
+        private IDataRepository repository;
+        private IMongoConnection _connection;
 
-        public FfmpegWrapper(IWebHostEnvironment env, ILogger<FfmpegWrapper> log, ConfigurationWrapper conf, ConversionProgressEvent evt)
+        public FfmpegWrapper(IWebHostEnvironment env, 
+            ILogger<FfmpegWrapper> log, 
+            ConfigurationWrapper conf, 
+            ConversionProgressEvent evt,
+            VideoAddedEvent _videoAddedEvent,
+            IDataRepository repo, 
+            IMongoConnection connection)
         {
             hostingEnv = env;
             logger = log;
             configurationManager = conf.ConfigurationManager;
             conversionProgressEvent = evt;
+            repository = repo;
+            _connection = connection;
+            videoAddedEvent = _videoAddedEvent;
         }
         public Task<bool> CancelEncoding(string id)
         {
@@ -35,6 +48,14 @@ namespace OpencastReplacement.Services
             {
                 evtArgs.Progress = p;
                 await conversionProgressEvent.Update(evtArgs);
+
+                var index = repository.Conversions.FindIndex(c => c.VideoId.Equals(video.Id));
+                if (index >= 0)
+                {
+                    var newConv = repository.Conversions[index] with { HasStarted = true, Progress = p };
+                    repository.Conversions[index] = newConv;
+                }
+
                 logger.LogInformation($"Progress on encode: {p}");
             });
 
@@ -65,6 +86,19 @@ namespace OpencastReplacement.Services
                         .WithFastStart())
                     .NotifyOnProgress(progressHandler, media.Duration)
                     .ProcessAsynchronously();
+                var index = repository.Conversions.FindIndex(c => c.VideoId.Equals(video.Id));
+                repository.Conversions.RemoveAt(index);
+                await conversionProgressEvent.Update(evtArgs);
+                var vid = video with
+                {
+                    Duration = media.Duration,
+                    Height = media.PrimaryVideoStream!.Height,
+                    Width = media.PrimaryVideoStream!.Width,
+                };
+                var coll = _connection.Client.GetDatabase("videoserver").GetCollection<Video>("videos");
+                await coll.InsertOneAsync(vid);
+                repository.Videos.Add(vid);
+                await videoAddedEvent.Update(true);
             } catch (Exception e) {
                 logger.LogCritical($"FFMpeg threw error: {e.InnerException}");
             }

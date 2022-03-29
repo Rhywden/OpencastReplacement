@@ -1,19 +1,150 @@
-﻿@using Fluxor
-@using Store.VideoUseCase
+﻿@using OpencastReplacement.Data
+@using System.Security.Claims
+@using OpencastReplacement.Events
+@using OpencastReplacement.Models
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IDataRepository DataRepository
+@inject VideoAddedEvent VideoAddedEvent
+@inject IJSRuntime JSRuntime
+@inject IWebHostEnvironment Environment
 
-@inherits Fluxor.Blazor.Web.Components.FluxorComponent
+@implements IDisposable
+
+<MudPaper Class="pa-3 ma-3">
+    <MudText>Suche:</MudText>
+    <MudAutocomplete @bind-Value="value" T="string" SearchFunc="Search" />
+    <MudButton OnClick="ResetSearch">Reset</MudButton>
+</MudPaper>
+
+<MudSimpleTable Hover="false">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Ersteller</th>
+            <th>Größe (bytes)</th>
+            <th>Dauer</th>
+            <th>Tags</th>
+            <th>Öffentlich</th>
+            <th>Auflösung</th>
+            <th></th>
+            <th></th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach(var vid in videosFiltered)
+        {
+            <tr @key="vid.Id">
+                <td>@vid.FileName</td>
+                <td>@vid.UserId</td>
+                <td>@vid.FileSize</td>
+                <td>@vid.Duration.Hours:@vid.Duration.Minutes:@vid.Duration.Seconds</td>
+                <td>
+                    @foreach(var tag in vid.Tags)
+                    {
+                        <MudChip @key="tag" Color="Color.Default">@tag</MudChip>
+                    }
+                </td>
+                <td>@(vid.Public ? "Öffentlich" : "Privat")</td>
+                <td>@($"{vid.Height}x{vid.Width}")</td>
+                <td><MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Video?id={vid.Id}") Color="Color.Secondary"></MudIconButton></td>
+                <td><MudButton Variant="Variant.Outlined" OnClick="(() => LinkToClipboard(vid.Id))">Link kopieren</MudButton></td>
+                <td><MudButton Variant="Variant.Filled" OnClick="(() => EmbedToClipboard(vid))">Embedcode kopieren</MudButton></td>
+            </tr>
+        }
+    </tbody>
+</MudSimpleTable>
+
 
 @code {
-    [Inject]
-    public IState<VideoState> State { get; set; } = default!;
-    [Inject]
-    private IDispatcher? Dispatcher { get; set; }
+    private ClaimsPrincipal? user;
+    private List<Video> videos = new();
+    private List<Video> videosFiltered => (string.IsNullOrWhiteSpace(value)) ? videos : videos.Where(v => v.FileName.Contains(value) || v.Tags.Contains(value)).ToList();
+    private List<string> list = new();
 
-    public VideoState VideoState => State.Value;
+    private string? value;
 
-    protected override void OnInitialized()
+    private string baseUrl => Environment.IsDevelopment() ? "https://localhost:7043" : "https://video.bs18.de";
+
+    protected override async Task OnInitializedAsync()
     {
-        base.OnInitialized();
-        Dispatcher?.Dispatch(new FetchVideosAction());
+        user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        LoadVideosAndTags();
+        VideoAddedEvent.Notify += OnVideoUpdate;
+    }
+
+    private void ResetSearch()
+    {
+        value = string.Empty;
+    }
+
+    private void LoadVideosAndTags()
+    {
+        foreach(var vid in DataRepository.Videos)
+        {
+            if(vid.Public || vid.UserId.Equals(user?.Identity?.Name))
+            {
+                videos.Add(vid);
+            }
+        }
+        foreach(var tag in DataRepository.Tags)
+        {
+            if (!tag.IsPrivate || tag.UserId.Equals(user?.Identity?.Name))
+            {
+                list.Add(tag.Name);
+            }
+        }
+    }
+
+    private async Task OnVideoUpdate(bool added)
+    {
+        await InvokeAsync(() =>
+        {
+            LoadVideosAndTags();
+            StateHasChanged();
+        });
+    }
+
+    private async Task LinkToClipboard(Guid id)
+    {
+        string link = $"{baseUrl}/Video?id={id}";
+        await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", link);
+        //Snackbar.Add("Id in die Zwischenablage kopiert!");
+    }
+
+    private async Task EmbedToClipboard(Video vid)
+    {
+        int newHeight = vid.Height;
+        int newWidth = vid.Width;
+
+        if(newHeight > 500)
+        {
+            double factor = 500.0 / (double)newHeight;
+            newHeight = 500;
+            newWidth = (int)(newWidth * factor);
+        }
+        if(newWidth > 600)
+        {
+            double factor = 600.0 / (double)newWidth;
+            newWidth = 600;
+            newHeight = (int)(newHeight * factor);
+        }
+
+        string embed = $"<iframe src=\"{baseUrl}/Video?id={vid.Id}\" title=\"{vid.FileName}\" style=\"width:{newWidth}px;height:{newHeight}px\" frameborder=\"0\" scrolling=\"no\" ></iframe>";
+        await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", embed);
+    }
+
+    private async Task<IEnumerable<string>> Search(string val)
+    {
+        if(string.IsNullOrWhiteSpace(val))
+        {
+            return list;
+        }
+        return list.Where(x => x.Contains(val, StringComparison.InvariantCultureIgnoreCase));
+    }
+
+    public void Dispose()
+    {
+        VideoAddedEvent.Notify -= OnVideoUpdate;
     }
 }

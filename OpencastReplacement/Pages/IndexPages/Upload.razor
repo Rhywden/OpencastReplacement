@@ -1,124 +1,216 @@
 ﻿@page "/upload"
 
 @using Microsoft.Extensions.Logging
+@using OpencastReplacement.Data
 @using OpencastReplacement.Events
 @using OpencastReplacement.Models
 @using OpencastReplacement.Services
+@using System.Security.Claims
 
 @inject ILogger<Upload> Logger
 @inject IWebHostEnvironment Environment
 @inject FileQueueMonitor FileQueueMonitor
 @inject ConversionProgressEvent ConversionProgressEvent
+@inject IDataRepository DataRepository
+@inject IDialogService DialogService
+@inject IMongoConnection MongoConnection
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 @implements IDisposable
 
-<style>
-    .drag-drop-zone {
-        display: flex;align-items: center;justify-content: center;transition: all .4s;min-height: 400px;
-    }
-    .drag-drop-input {
-        position: absolute;width: 100%;height: 90%;opacity: 0;cursor:pointer;
-        z-index:2;
-    }
-    .drag-enter {
-        box-shadow: var(--mud-elevation-10);
-    }
-    .list{
-        padding:2em;min-width:100%;
-    }
-</style>
+<AuthorizeView Roles="admin,lehrer">
+    <Authorized>
+        <style>
+            .drag-drop-zone {
+                display: flex;align-items: center;justify-content: center;transition: all .4s;min-height: 200px;
+            }
+            .drag-drop-input {
+                position: absolute;width: 80%;height: 200px;opacity: 0;cursor:pointer;
+                z-index:2;
+            }
+            .drag-enter {
+                box-shadow: var(--mud-elevation-10);
+            }
+            .list{
+                padding:2em;min-width:100%;
+            }
+        </style>
 
-<MudPaper @ondragenter="@(()=>_dragEnterStyle="drag-enter")"
-          @ondragleave="@(()=>_dragEnterStyle=null)"
-          @ondragend="@(()=>_dragEnterStyle=null)"
-          Class=@("drag-drop-zone "+ _dragEnterStyle)>
-
-    <InputFile OnChange="@LoadFiles" multiple class="drag-drop-input" />
-
-    @if (loadedFiles.Count() == 0)
+        <MudPaper @ondragenter="@(()=>_dragEnterStyle="drag-enter")"
+                  @ondragleave="@(()=>_dragEnterStyle=null)"
+                  @ondragend="@(()=>_dragEnterStyle=null)"
+                  Class=@("drag-drop-zone "+ _dragEnterStyle)>
+            <MudText Typo="Typo.h5">Zum Hochladen hier clicken oder eine Datei per Drag'n'Drop ablegen</MudText>
+            <InputFile OnChange="@LoadFiles" multiple class="drag-drop-input" />
+        </MudPaper>
+        @if (isLoading)
         {
-            <MudText Typo="Typo.h3">Drag and drop files here or click</MudText> 
-        }else
-        {
-            <MudList Style="padding:2em;width:100%;" Dense="true" >
-                @foreach (var file in loadedFiles)
-                {
-                    <MudListItem @key="@file" >
-                       <MudChip Color="Color.Dark" 
-                                Style="width:60px; overflow:hidden;" 
-                                Text="@(file.Name.Split(".").Last())" />
-                       @file.Name
-                    </MudListItem>}
-            </MudList>
+            <MudProgressLinear Color="Color.Primary" Value="@progressInt" Class="my-7" /><MudText>@progressInt%</MudText>
         }
-</MudPaper>
-<MudGrid Justify="Justify.Center" Spacing="4">
-    <MudItem>
-        <MudButton OnClick="StartUpload" Disabled="@(!loadedFiles.Any())" Color="Color.Primary" Variant="Variant.Filled">Upload</MudButton>
-    </MudItem>
-    <MudItem>
-        <MudButton OnClick="@loadedFiles.Clear" Disabled="@(!loadedFiles.Any())" Color="Color.Error" Variant="Variant.Filled">Clear</MudButton>
-    </MudItem>
-</MudGrid>
-@if (isLoading)
-{
-    <MudProgressLinear Color="Color.Primary" Value="@progressInt" Class="my-7" />
-}
 
-<MudPaper>
-    <MudText>Conversionprogress: @conversionProgress</MudText>
-</MudPaper>
+        <MudText Typo="Typo.h4">Hochgeladene Dateien</MudText>
 
-<MudTable Items="@loadedFiles" Breakpoint="Breakpoint.Sm" Hover="false">
-    <HeaderContent>
-        <MudTh>Name</MudTh>
-        <MudTh>Größe (MB)</MudTh>
-        <MudTh>Typ</MudTh>
-        <MudTh>Optionen</MudTh>
-        <MudTh>Tags</MudTh>
-        <MudTh></MudTh>
-    </HeaderContent>
-    <RowTemplate>
-        <MudTd DataLabel="Name">@context.Name</MudTd>
-        <MudTd DataLabel="Size">@context.Size</MudTd>
-        <MudTd DataLabel="Typ">@context.ContentType</MudTd>
-        <MudTd DataLabel="Options"><MudCheckBox @bind-Checked="Check480p" Label="480p"></MudCheckBox></MudTd>
-        <MudTd DataLabel="Tags"><MudChip Color="Color.Default" OnClose="OnClose">Physik</MudChip></MudTd>
-        <MudTd DataLabel="Actions"><MudButton>Start</MudButton><MudButton>Löschen</MudButton></MudTd>
-    </RowTemplate>
-</MudTable>
+        <MudSimpleTable Hover="false">
+            <thead>
+                <tr>        
+                    <th>Name</th>
+                    <th>Größe (Byte)</th>
+                    <th>Typ</th>
+                    <th>Optionen</th>
+                    <th>Tags</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var file in loadedFiles) {
+                    <tr @key="file.Id">
+                        <td>@file.File.Name</td>
+                        <td>@file.File.Size</td>
+                        <td>@file.File.ContentType</td>
+                        <td>
+                            <MudCheckBox Label="Öffentlich" T="bool" Checked="file.IsPublic" CheckedChanged="(() => TogglePublic(file))"></MudCheckBox>
+                        </td>
+                        <td>
+                            @foreach(var tag in file.Tags)
+                                {
+                                    <MudChip @key="tag" Color="Color.Default" OnClose="@(() => OnClose(file, tag))">@tag</MudChip>
+                                }
+                            <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => OpenAddTagDialog(file))" Size="Size.Small" />
+                        </td>
+                        <td>
+                            <MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="@(() => StartEncoding(file))" >Start</MudButton>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </MudSimpleTable>
 
+        <MudText Typo="Typo.h4">Warteschlange für Konvertierungen</MudText>
 
+        <MudSimpleTable Hover="false">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Zustand</th>
+                    <th>Fortschritt</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach(var conv in DataRepository.Conversions)
+                {
+                    <tr @key="conv.ConversionId">
+                        <td>@conv.Filename</td>
+                        <td>
+                            @(conv.HasStarted ? "In Bearbeitung" : "Wartet")
+                        </td>
+                        <td>
+                            <MudProgressLinear Color="Color.Primary" Value="Convert.ToInt32(conv.Progress)" Class="my-7" />
+                        </td>
+                        <td>
+                            <MudText>@conv.Progress%</MudText>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </MudSimpleTable>
+    </Authorized>
+</AuthorizeView>
 @code {
     private string? _dragEnterStyle;
     private bool Check480p { get; set; }
-    private List<IBrowserFile> loadedFiles = new();
+    private List<UploadedFile> loadedFiles = new();
     private long maxFileSize = 1024 * 1024 * 500;
     private double conversionProgress = 0;
     private int maxAllowedFiles = 3;
     private bool isLoading;
     private int progressInt;
 
-    private async Task StartUpload()
+    private ClaimsPrincipal? user;
+
+    private void TogglePublic(UploadedFile file)
     {
-
+        int index = loadedFiles.IndexOf(file);
+        loadedFiles[index] = loadedFiles[index] with { IsPublic = !loadedFiles[index].IsPublic };
     }
-    private void OnClose(MudChip chip)
+
+    async Task OpenAddTagDialog(UploadedFile file)
     {
+        var parameters = new DialogParameters { ["id"] = file.Id };
+        var dialog = DialogService.Show<TagDialog>("Tag hinzufügen", parameters);
+        var result = await dialog.Result;
 
+        if(!result.Cancelled)
+        {
+            var content = (TagResult)result.Data;
+            int index = DataRepository.Tags.FindIndex(t => t.Name.Equals(content.Tag));
+            if(index < 0)
+            {
+                var tag = new Tag
+                    {
+                        IsPrivate = true,
+                        Name = content.Tag,
+                        UserId = user?.Identity?.Name ?? string.Empty
+                    };
+                DataRepository.Tags.Add(tag);
+                var coll = MongoConnection.Client.GetDatabase("videoserver").GetCollection<Tag>("tags");
+                await coll.InsertOneAsync(tag);
+            }
+            int fileIndex = loadedFiles.FindIndex(l => l.Id.Equals(content.Id));
+            if(fileIndex >= 0)
+            {
+                var fi = loadedFiles[fileIndex];
+                var tags = fi.Tags;
+                tags.Add(content.Tag);
+                loadedFiles[fileIndex] = fi with { Tags = tags };
+            }
+        }
     }
 
-    protected override void OnInitialized()
+    private async Task StartEncoding(UploadedFile file)
+    {
+        var video = new Video
+            {
+                FileName = file.File.Name,
+                FileSize = file.File.Size,
+                Public = file.IsPublic,
+                Tags = file.Tags,
+                UserId = user?.Identity?.Name ?? string.Empty
+            };
+        var conversion = new Conversion
+            {
+                Filename = file.IsPublic ? file.File.Name : "Nicht öffentlich",
+                Progress = 0,
+                HasStarted = false,
+                VideoId = video.Id
+            };
+        DataRepository.Conversions.Add(conversion);
+        await FileQueueMonitor.QueueFileForEncoding(video);
+        int index = loadedFiles.FindIndex(l => l.Id.Equals(file.Id));
+        if(index >= 0)
+        {
+            loadedFiles.RemoveAt(index);
+        }
+    }
+    private void OnClose(UploadedFile file, string tag)
+    {
+        int index = loadedFiles.IndexOf(file);
+        var tags = file.Tags;
+        tags.Remove(tag);
+        var newFile = file with { Tags = tags };
+        loadedFiles[index] = newFile;
+    }
+
+    protected override async Task OnInitializedAsync()
     {
         ConversionProgressEvent.Notify += OnProgressReport;
-        base.OnInitialized();
+        user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
     }
 
     private async Task LoadFiles(InputFileChangeEventArgs e)
     {
         isLoading = true;
         progressInt = 0;
-        loadedFiles.Clear();
 
         foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
         {
@@ -146,17 +238,14 @@
                     StateHasChanged();
                 }
 
-                var video = new Video
-                {
-                    Duration = new TimeSpan(0,0,10),
-                    FileName = file.Name,
-                    FileSize = file.Size,
+                var fil = new UploadedFile
+                    {
+                        File = file,
+                        IsPublic = true
+                    };
 
-                };
 
-                await FileQueueMonitor.QueueFileForEncoding(video);
-
-                loadedFiles.Add(file);
+                loadedFiles.Add(fil);
             }
             catch (Exception ex)
             {
