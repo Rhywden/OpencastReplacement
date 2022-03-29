@@ -1,12 +1,16 @@
 ﻿@page "/upload"
 
 @using Microsoft.Extensions.Logging
+@using OpencastReplacement.Events
 @using OpencastReplacement.Models
 @using OpencastReplacement.Services
 
 @inject ILogger<Upload> Logger
 @inject IWebHostEnvironment Environment
 @inject FileQueueMonitor FileQueueMonitor
+@inject ConversionProgressEvent ConversionProgressEvent
+
+@implements IDisposable
 
 <style>
     .drag-drop-zone {
@@ -61,6 +65,10 @@
     <MudProgressLinear Color="Color.Primary" Value="@progressInt" Class="my-7" />
 }
 
+<MudPaper>
+    <MudText>Conversionprogress: @conversionProgress</MudText>
+</MudPaper>
+
 <MudTable Items="@loadedFiles" Breakpoint="Breakpoint.Sm" Hover="false">
     <HeaderContent>
         <MudTh>Name</MudTh>
@@ -86,6 +94,7 @@
     private bool Check480p { get; set; }
     private List<IBrowserFile> loadedFiles = new();
     private long maxFileSize = 1024 * 1024 * 500;
+    private double conversionProgress = 0;
     private int maxAllowedFiles = 3;
     private bool isLoading;
     private int progressInt;
@@ -97,6 +106,12 @@
     private void OnClose(MudChip chip)
     {
 
+    }
+
+    protected override void OnInitialized()
+    {
+        ConversionProgressEvent.Notify += OnProgressReport;
+        base.OnInitialized();
     }
 
     private async Task LoadFiles(InputFileChangeEventArgs e)
@@ -151,5 +166,19 @@
         }
 
         isLoading = false;
+    }
+
+    public async Task OnProgressReport(ConversionProgressEventArgs args)
+    {
+        await InvokeAsync(() =>
+        {
+            conversionProgress = args.Progress;
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        ConversionProgressEvent.Notify -= OnProgressReport;   
     }
 }

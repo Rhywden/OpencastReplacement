@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Microsoft.IdentityModel.Tokens;
+using OpencastReplacement.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,8 +44,9 @@ builder.Services.AddFluxor(opt =>
 
 builder.Services.AddSingleton<IFfmpegWrapper, FfmpegWrapper>();
 builder.Services.AddSingleton<IMongoConnection>(mc => new MongoConnection(Configuration["mongodb:connection"]));
-
+builder.Services.AddSingleton<ConfigurationWrapper>(cm => new ConfigurationWrapper(Configuration));
 builder.Services.AddHostedService<QueuedHostedService>();
+builder.Services.AddSingleton<ConversionProgressEvent>();
 builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx =>
 {
     return new BackgroundTaskQueue(100);

@@ -1,5 +1,7 @@
 ﻿using FFMpegCore;
 using FFMpegCore.Enums;
+using Fluxor;
+using OpencastReplacement.Events;
 using OpencastReplacement.Models;
 
 namespace OpencastReplacement.Services
@@ -8,11 +10,15 @@ namespace OpencastReplacement.Services
     {
         private IWebHostEnvironment hostingEnv;
         private ILogger<FfmpegWrapper> logger;
+        private ConfigurationManager configurationManager;
+        private ConversionProgressEvent conversionProgressEvent;
 
-        public FfmpegWrapper(IWebHostEnvironment env, ILogger<FfmpegWrapper> log)
+        public FfmpegWrapper(IWebHostEnvironment env, ILogger<FfmpegWrapper> log, ConfigurationWrapper conf, ConversionProgressEvent evt)
         {
             hostingEnv = env;
             logger = log;
+            configurationManager = conf.ConfigurationManager;
+            conversionProgressEvent = evt;
         }
         public Task<bool> CancelEncoding(string id)
         {
@@ -21,16 +27,31 @@ namespace OpencastReplacement.Services
 
         public async Task<bool> StartEncoding(Video video)
         {
-            Action<double> progressHandler = new Action<double>(p =>
+            var evtArgs = new ConversionProgressEventArgs
             {
+                Progress = 0
+            };
+            Action<double> progressHandler = new Action<double>(async p =>
+            {
+                evtArgs.Progress = p;
+                await conversionProgressEvent.Update(evtArgs);
                 logger.LogInformation($"Progress on encode: {p}");
             });
 
-            GlobalFFOptions.Configure(new FFOptions { BinaryFolder = "C:\\ProgramData\\chocolatey\\lib\\ffmpeg\\tools\\ffmpeg\\bin" });
-            var input = Path.Combine(hostingEnv.ContentRootPath,
-                    "wwwroot", "temp", video.FileName);
-            var output = Path.Combine(hostingEnv.ContentRootPath,
-                    "wwwroot", "uploads", video.FileName);
+            GlobalFFOptions.Configure(new FFOptions { BinaryFolder = configurationManager["ffmpeg:exepath"] });
+            string input;
+            string output;
+            if (hostingEnv.IsDevelopment())
+            {
+                input = Path.Combine(hostingEnv.ContentRootPath,
+                        "wwwroot", "temp", video.FileName);
+                output = Path.Combine(hostingEnv.ContentRootPath,
+                        "wwwroot", "uploads", video.FileName);
+            } else
+            {
+                input = configurationManager["ffmpeg:temppath"];
+                output = configurationManager["ffmpeg:storepath"];
+            }
 
             var media = await FFProbe.AnalyseAsync(input);
 
@@ -39,7 +60,7 @@ namespace OpencastReplacement.Services
                     .FromFileInput(input)
                     .OutputToFile(output, false, options => options
                         .WithVideoCodec(VideoCodec.LibX264)
-                        .WithConstantRateFactor(21)
+                        .WithConstantRateFactor(23)
                         .WithAudioCodec(AudioCodec.Aac)
                         .WithFastStart())
                     .NotifyOnProgress(progressHandler, media.Duration)
