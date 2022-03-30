@@ -1,6 +1,7 @@
 ﻿@using OpencastReplacement.Data
 @using System.Security.Claims
 @using OpencastReplacement.Events
+@using OpencastReplacement.Helpers
 @using OpencastReplacement.Models
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IDataRepository DataRepository
@@ -11,9 +12,24 @@
 @implements IDisposable
 
 <MudPaper Class="pa-3 ma-3">
-    <MudText>Suche:</MudText>
-    <MudAutocomplete @bind-Value="value" T="string" SearchFunc="Search" />
-    <MudButton OnClick="ResetSearch">Reset</MudButton>
+    <MudGrid>
+        <MudItem xs="4">
+            <MudAutocomplete @bind-Value="value"
+                @ref="autocomplete"
+                Label="Suche"
+                T="string" 
+                SearchFunc="Search" 
+                CoerceValue="true" 
+                AdornmentIcon="@Icons.Material.Filled.Search"
+                ResetValueOnEmptyText="true" />
+        </MudItem>
+        <MudItem xs="1">
+            <MudButton OnClick="ResetSearch" Variant="Variant.Outlined">Reset</MudButton>
+        </MudItem>
+    </MudGrid>
+    
+    
+    
 </MudPaper>
 
 <MudSimpleTable Hover="false">
@@ -21,7 +37,7 @@
         <tr>
             <th>Name</th>
             <th>Ersteller</th>
-            <th>Größe (bytes)</th>
+            <th>Größe (MB)</th>
             <th>Dauer</th>
             <th>Tags</th>
             <th>Öffentlich</th>
@@ -37,7 +53,7 @@
             <tr @key="vid.Id">
                 <td>@vid.FileName</td>
                 <td>@vid.UserId</td>
-                <td>@vid.FileSize</td>
+                <td>@ByteToMegabyte(@vid.FileSize)</td>
                 <td>@vid.Duration.Hours:@vid.Duration.Minutes:@vid.Duration.Seconds</td>
                 <td>
                     @foreach(var tag in vid.Tags)
@@ -46,7 +62,7 @@
                     }
                 </td>
                 <td>@(vid.Public ? "Öffentlich" : "Privat")</td>
-                <td>@($"{vid.Height}x{vid.Width}")</td>
+                <td>@($"{vid.Width}x{vid.Height}")</td>
                 <td><MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Video?id={vid.Id}") Color="Color.Secondary"></MudIconButton></td>
                 <td><MudButton Variant="Variant.Outlined" OnClick="(() => LinkToClipboard(vid.Id))">Link kopieren</MudButton></td>
                 <td><MudButton Variant="Variant.Filled" OnClick="(() => EmbedToClipboard(vid))">Embedcode kopieren</MudButton></td>
@@ -59,8 +75,10 @@
 @code {
     private ClaimsPrincipal? user;
     private List<Video> videos = new();
-    private List<Video> videosFiltered => (string.IsNullOrWhiteSpace(value)) ? videos : videos.Where(v => v.FileName.Contains(value) || v.Tags.Contains(value)).ToList();
+    private StringEqualityComparer comparer = new();
+    private List<Video> videosFiltered => (string.IsNullOrWhiteSpace(value)) ? videos : videos.Where(v => v.FileName.Contains(value, StringComparison.InvariantCultureIgnoreCase) || v.Tags.Contains<string>(value, comparer)).ToList();
     private List<string> list = new();
+    private MudAutocomplete<string>? autocomplete;
 
     private string? value;
 
@@ -76,6 +94,13 @@
     private void ResetSearch()
     {
         value = string.Empty;
+        autocomplete?.Clear();
+        StateHasChanged();
+    }
+
+    private string ByteToMegabyte(long bytes)
+    {
+        return String.Format("{0:0.00}", bytes / (1024.0 * 1024.0));
     }
 
     private void LoadVideosAndTags()
