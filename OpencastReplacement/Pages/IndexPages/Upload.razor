@@ -216,16 +216,8 @@
         {
             try
             {
-                //var trustedFileName = Path.GetRandomFileName();
-                string? path;
-                if(Environment.IsDevelopment())
-                {
-                    path = Path.Combine(Environment.ContentRootPath,
+                 var path = Path.Combine(Environment.ContentRootPath,
                     "wwwroot","temp", file.Name);
-                } else {
-                    path = "/var/www/temp";
-                }
-                
 
                 await using FileStream writeStream = new(path, FileMode.Create);
                 using var readStream = file.OpenReadStream(maxFileSize);

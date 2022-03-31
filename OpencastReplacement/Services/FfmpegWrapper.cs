@@ -60,19 +60,10 @@ namespace OpencastReplacement.Services
             });
 
             GlobalFFOptions.Configure(new FFOptions { BinaryFolder = configurationManager["ffmpeg:exepath"] });
-            string input;
-            string output;
-            if (hostingEnv.IsDevelopment())
-            {
-                input = Path.Combine(hostingEnv.ContentRootPath,
+            string input = Path.Combine(hostingEnv.ContentRootPath,
                         "wwwroot", "temp", video.FileName);
-                output = Path.Combine(hostingEnv.ContentRootPath,
+            string output = Path.Combine(hostingEnv.ContentRootPath,
                         "wwwroot", "uploads", video.FileName);
-            } else
-            {
-                input = configurationManager["ffmpeg:temppath"];
-                output = configurationManager["ffmpeg:storepath"];
-            }
 
             var media = await FFProbe.AnalyseAsync(input);
 
