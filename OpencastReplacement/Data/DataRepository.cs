@@ -13,12 +13,11 @@ namespace OpencastReplacement.Data
 
         public async Task Init()
         {
-            var db = _connection.Client.GetDatabase("videoserver");
-            var videocollection = db.GetCollection<Video>("videos");
+            var videocollection = _connection.GetVideoCollection();
             var videofilter = Builders<Video>.Filter.Empty;
             Videos = await (await videocollection.FindAsync(videofilter)).ToListAsync();
 
-            var tagcollection = db.GetCollection<Models.Tag>("tags");
+            var tagcollection = _connection.GetTagCollection();
             var tagfilter = Builders<Models.Tag>.Filter.Empty;
             Tags = await (await tagcollection.FindAsync(tagfilter)).ToListAsync();
         }

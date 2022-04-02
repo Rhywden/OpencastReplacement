@@ -22,7 +22,7 @@ namespace OpencastReplacement.Controllers
         [HttpGet]
         public IActionResult Get(string id)
         {
-            var coll = connection.Client.GetDatabase("videoserver").GetCollection<Video>("videos");
+            var coll = connection.GetVideoCollection();
             var filter = Builders<Video>.Filter.Eq("_id", id);
             var res = coll.FindSync(filter);
             var vid = res.FirstOrDefault();

@@ -43,7 +43,7 @@ builder.Services.AddFluxor(opt =>
 });
 
 builder.Services.AddSingleton<IFfmpegWrapper, FfmpegWrapper>();
-builder.Services.AddSingleton<IMongoConnection>(mc => new MongoConnection(Configuration["mongodb:connection"]));
+builder.Services.AddSingleton<IMongoConnection>(mc => new MongoConnection(Configuration["mongodb:connection"], Environment));
 builder.Services.AddSingleton<ConfigurationWrapper>(cm => new ConfigurationWrapper(Configuration));
 builder.Services.AddHostedService<QueuedHostedService>();
 builder.Services.AddSingleton<ConversionProgressEvent>();

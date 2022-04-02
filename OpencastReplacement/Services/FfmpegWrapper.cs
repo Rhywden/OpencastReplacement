@@ -86,7 +86,7 @@ namespace OpencastReplacement.Services
                     Height = media.PrimaryVideoStream!.Height,
                     Width = media.PrimaryVideoStream!.Width,
                 };
-                var coll = _connection.Client.GetDatabase("videoserver").GetCollection<Video>("videos");
+                var coll = _connection.GetVideoCollection();
                 await coll.InsertOneAsync(vid);
                 repository.Videos.Add(vid);
                 await videoAddedEvent.Update(true);

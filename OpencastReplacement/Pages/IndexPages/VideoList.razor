@@ -50,7 +50,7 @@
     <tbody>
         @foreach(var vid in videosFiltered)
         {
-            <tr @key="vid.Id">
+            <tr @key="IdToKeyVideoList(vid.Id)">
                 <td>@vid.FileName</td>
                 <td>@vid.UserId</td>
                 <td>@ByteToMegabyte(@vid.FileSize)</td>
@@ -89,6 +89,11 @@
         user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
         LoadVideosAndTags();
         VideoAddedEvent.Notify += OnVideoUpdate;
+    }
+
+    private string IdToKeyVideoList(Guid id)
+    {
+        return $"videolist_{id}";
     }
 
     private void ResetSearch()

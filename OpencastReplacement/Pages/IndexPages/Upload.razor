@@ -63,7 +63,7 @@
             </thead>
             <tbody>
                 @foreach(var file in loadedFiles) {
-                    <tr @key="file.Id">
+                    <tr @key="IdToKeyUploads(file.Id)">
                         <td>@file.File.Name</td>
                         <td>@file.File.Size</td>
                         <td>@file.File.ContentType</td>
@@ -99,7 +99,7 @@
             <tbody>
                 @foreach(var conv in DataRepository.Conversions)
                 {
-                    <tr @key="conv.ConversionId">
+                    <tr @key="IdToKeyConversions(conv.ConversionId)">
                         <td>@conv.Filename</td>
                         <td>
                             @(conv.HasStarted ? "In Bearbeitung" : "Wartet")
@@ -128,6 +128,15 @@
 
     private ClaimsPrincipal? user;
 
+    private string IdToKeyConversions(Guid id)
+    {
+        return $"conversions_{id}";
+    }
+    private string IdToKeyUploads(Guid id)
+    {
+        return $"uploads_{id}";
+    }
+
     private void TogglePublic(UploadedFile file)
     {
         int index = loadedFiles.IndexOf(file);
@@ -153,7 +162,7 @@
                         UserId = user?.Identity?.Name ?? string.Empty
                     };
                 DataRepository.Tags.Add(tag);
-                var coll = MongoConnection.Client.GetDatabase("videoserver").GetCollection<Tag>("tags");
+                var coll = MongoConnection.GetTagCollection();
                 await coll.InsertOneAsync(tag);
             }
             int fileIndex = loadedFiles.FindIndex(l => l.Id.Equals(content.Id));
