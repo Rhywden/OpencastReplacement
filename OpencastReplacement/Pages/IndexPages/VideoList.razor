@@ -61,7 +61,7 @@
                 <td>
                     @foreach(var tag in vid.Tags)
                     {
-                        <MudChip @key="tag" Color="Color.Default">@tag</MudChip>
+                        <MudChip Color="Color.Default">@tag</MudChip>
                     }
                 </td>
                 <td>@(vid.Public ? "Öffentlich" : "Privat")</td>
@@ -79,7 +79,7 @@
     private ClaimsPrincipal? user;
     private List<Video> videos = new();
     private StringEqualityComparer comparer = new();
-    private List<Video> videosFiltered => (string.IsNullOrWhiteSpace(value)) ? videos : videos.Where(v => v.FileName.Contains(value, StringComparison.InvariantCultureIgnoreCase) || v.Tags.Contains<string>(value, comparer)).ToList();
+    private List<Video> videosFiltered => (string.IsNullOrWhiteSpace(value)) ? videos.Distinct().ToList() : videos.Distinct().Where(v => v.FileName.Contains(value, StringComparison.InvariantCultureIgnoreCase) || v.Tags.Contains<string>(value, comparer)).ToList();
     private List<Video> videosFilteredOwner => showOnlyOwnVideos ? videosFiltered.Where(v => v.UserId.Equals(user?.Identity?.Name)).ToList() : videosFiltered;
     private List<string> list = new();
     private MudAutocomplete<string>? autocomplete;

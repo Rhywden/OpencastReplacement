@@ -73,7 +73,7 @@
                         <td>
                             @foreach(var tag in file.Tags)
                                 {
-                                    <MudChip @key="tag" Color="Color.Default" OnClose="@(() => OnClose(file, tag))">@tag</MudChip>
+                                    <MudChip Color="Color.Default" OnClose="@(() => OnClose(file, tag))">@tag</MudChip>
                                 }
                             <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => OpenAddTagDialog(file))" Size="Size.Small" />
                         </td>
