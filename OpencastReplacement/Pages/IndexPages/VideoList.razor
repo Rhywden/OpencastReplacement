@@ -165,7 +165,7 @@
             newHeight = (int)(newHeight * factor);
         }
 
-        string embed = $"<iframe src=\"{baseUrl}/Video?id={vid.Id}\" title=\"{vid.FileName}\" style=\"width:{newWidth}px;height:{newHeight}px\" frameborder=\"0\" scrolling=\"no\" ></iframe>";
+        string embed = $"<iframe src=\"{baseUrl}/Video?id={vid.Id}\" title=\"{vid.FileName}\" style=\"width:{newWidth}px;height:{newHeight}px\" frameborder=\"0\" scrolling=\"no\" allowfullscreen></iframe>";
         await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", embed);
     }
 
