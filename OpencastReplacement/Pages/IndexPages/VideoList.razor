@@ -51,7 +51,7 @@
         </tr>
     </thead>
     <tbody>
-        @foreach(var vid in videosFilteredOwner)
+        @foreach(var vid in videosFilteredByOwner)
         {
             <tr @key="IdToKeyVideoList(vid.Id)">
                 <td>@vid.FileName</td>
@@ -77,10 +77,10 @@
 
 @code {
     private ClaimsPrincipal? user;
-    private List<Video> videos = new();
+    private List<Video> videos => DataRepository.Videos.Where(vid => vid.Public || vid.UserId.Equals(user?.Identity?.Name)).ToList();
     private StringEqualityComparer comparer = new();
-    private List<Video> videosFiltered => (string.IsNullOrWhiteSpace(value)) ? videos.Distinct().ToList() : videos.Distinct().Where(v => v.FileName.Contains(value, StringComparison.InvariantCultureIgnoreCase) || v.Tags.Contains<string>(value, comparer)).ToList();
-    private List<Video> videosFilteredOwner => showOnlyOwnVideos ? videosFiltered.Where(v => v.UserId.Equals(user?.Identity?.Name)).ToList() : videosFiltered;
+    private List<Video> videosFiltered => (string.IsNullOrWhiteSpace(value)) ? videos.ToList() : videos.Where(v => v.FileName.Contains(value, StringComparison.InvariantCultureIgnoreCase) || v.Tags.Contains<string>(value, comparer)).ToList();
+    private List<Video> videosFilteredByOwner => showOnlyOwnVideos ? videosFiltered.Where(v => v.UserId.Equals(user?.Identity?.Name)).ToList() : videosFiltered;
     private List<string> list = new();
     private MudAutocomplete<string>? autocomplete;
     private bool showOnlyOwnVideos = true;
@@ -92,7 +92,6 @@
     protected override async Task OnInitializedAsync()
     {
         user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
-        LoadVideosAndTags();
         VideoAddedEvent.Notify += OnVideoUpdate;
     }
 
@@ -113,29 +112,10 @@
         return String.Format("{0:0.00}", bytes / (1024.0 * 1024.0));
     }
 
-    private void LoadVideosAndTags()
-    {
-        foreach(var vid in DataRepository.Videos)
-        {
-            if(vid.Public || vid.UserId.Equals(user?.Identity?.Name))
-            {
-                videos.Add(vid);
-            }
-        }
-        foreach(var tag in DataRepository.Tags)
-        {
-            if (!tag.IsPrivate || tag.UserId.Equals(user?.Identity?.Name))
-            {
-                list.Add(tag.Name);
-            }
-        }
-    }
-
     private async Task OnVideoUpdate(bool added)
     {
         await InvokeAsync(() =>
         {
-            LoadVideosAndTags();
             StateHasChanged();
         });
     }
