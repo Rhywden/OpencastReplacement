@@ -9,13 +9,9 @@ namespace OpencastReplacement.Controllers
     [ApiController]
     public class VideoController : ControllerBase
     {
-        private IWebHostEnvironment hostingEnv;
-        private ILogger<VideoController> logger;
-        private IMongoConnection connection;
-        public VideoController(IWebHostEnvironment env, ILogger<VideoController> log, IMongoConnection conn)
+        private readonly IMongoConnection connection;
+        public VideoController(IMongoConnection conn)
         {
-            hostingEnv = env;
-            logger = log;
             connection = conn;
         }
 

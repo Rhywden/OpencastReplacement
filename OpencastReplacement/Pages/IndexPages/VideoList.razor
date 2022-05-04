@@ -8,6 +8,7 @@
 @inject VideoAddedEvent VideoAddedEvent
 @inject IJSRuntime JSRuntime
 @inject IWebHostEnvironment Environment
+@inject IDialogService DialogService
 
 @implements IDisposable
 
@@ -26,8 +27,14 @@
         <MudItem xs="1">
             <MudButton OnClick="ResetSearch" Variant="Variant.Outlined">Reset</MudButton>
         </MudItem>
-        <MudItem xs="3">
+        <MudItem xs="2">
             <MudCheckBox @bind-Checked="@showOnlyOwnVideos" Label="Nur eigene Videos zeigen"></MudCheckBox>
+        </MudItem>
+        <MudItem xs="2">
+            <MudCheckBox @bind-Checked="@showSelector" Label="Videos für Serie aussuchen"></MudCheckBox>
+        </MudItem>
+        <MudItem xs="3">
+            <MudButton Variant="Variant.Filled" Disabled="(selectedIds.Count == 0)" OnClick="() => OpenCreateSeriesDialog()">Serie erstellen</MudButton>
         </MudItem>
     </MudGrid>
     
@@ -38,6 +45,7 @@
 <MudSimpleTable Hover="false">
     <thead>
         <tr>
+            <th></th>
             <th>Name</th>
             <th>Ersteller</th>
             <th>Größe (MB)</th>
@@ -48,12 +56,19 @@
             <th></th>
             <th></th>
             <th></th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
         @foreach(var vid in videosFilteredByOwner)
         {
             <tr @key="IdToKeyVideoList(vid.Id)">
+                <td>
+                    @if(showSelector)
+                    {
+                        <MudCheckBox T="bool" Checked="(IsSelected(vid))" CheckedChanged="(() => ToggleSelection(vid))"></MudCheckBox>
+                    }
+                </td>
                 <td>@vid.FileName</td>
                 <td>@vid.UserId</td>
                 <td>@ByteToMegabyte(@vid.FileSize)</td>
@@ -69,6 +84,13 @@
                 <td><MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Video?id={vid.Id}") Color="Color.Secondary"></MudIconButton></td>
                 <td><MudButton Variant="Variant.Outlined" OnClick="(() => LinkToClipboard(vid.Id))">Link kopieren</MudButton></td>
                 <td><MudButton Variant="Variant.Filled" OnClick="(() => EmbedToClipboard(vid))">Embedcode kopieren</MudButton></td>
+                <td>
+                    @if (vid.UserId.Equals(user?.Identity?.Name))
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="(() => OpenEditDialog(vid))" Color="Color.Info"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="(() => DeleteVideo(vid))" Color="Color.Warning"></MudIconButton>
+                    }
+                </td>
             </tr>
         }
     </tbody>
@@ -84,6 +106,9 @@
     private List<string> list = new();
     private MudAutocomplete<string>? autocomplete;
     private bool showOnlyOwnVideos = true;
+    private List<Guid> selectedIds = new();
+
+    private bool showSelector = false;
 
     private string? value;
 
@@ -120,11 +145,56 @@
         });
     }
 
+    private void ToggleSelection(Video vid)
+    {
+        if(selectedIds.Contains(vid.Id))
+        {
+            selectedIds.Remove(vid.Id);
+        } else
+        {
+            selectedIds.Add(vid.Id);
+        }
+    }
+    private bool IsSelected(Video vid) => selectedIds.Contains(vid.Id);
+
     private async Task LinkToClipboard(Guid id)
     {
         string link = $"{baseUrl}/Video?id={id}";
         await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", link);
         //Snackbar.Add("Id in die Zwischenablage kopiert!");
+    }
+
+    private async void DeleteVideo(Video video)
+    {
+        bool? result = await DialogService.ShowMessageBox("Warnung", "Das Video wird permanent gelöscht!", yesText: "Löschen!");
+        if(result == true)
+        {
+            DataRepository.DeleteVideo(video);
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenEditDialog(Video video)
+    {
+        var parameters = new DialogParameters { ["video"] = video };
+        var dialog = DialogService.Show<EditVideoDialog>("Video editieren", parameters);
+        var result = await dialog.Result;
+
+        if(!result.Cancelled)
+        {
+            
+        }
+    }
+
+    private async Task OpenCreateSeriesDialog()
+    {
+        var dialog = DialogService.Show<CreateSeriesDialog>("Neue Serie erstellen");
+        var result = await dialog.Result;
+
+        if(!result.Cancelled)
+        {
+            
+        }
     }
 
     private async Task EmbedToClipboard(Video vid)

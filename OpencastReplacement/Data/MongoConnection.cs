@@ -15,7 +15,8 @@ namespace OpencastReplacement.Data
         {
             BsonSerializer.RegisterSerializer(new GuidSerializer(BsonType.String));
             BsonClassMap.RegisterClassMap<Models.Tag>();
-            BsonClassMap.RegisterClassMap<Models.Video>();
+            BsonClassMap.RegisterClassMap<Video>();
+            BsonClassMap.RegisterClassMap<Series>();
             Client = new MongoClient(connectionString);
             database = env.IsDevelopment() ? "videoserver_dev" : "videoserver";
         }
@@ -27,7 +28,12 @@ namespace OpencastReplacement.Data
 
         public IMongoCollection<Video> GetVideoCollection()
         {
-            return Client.GetDatabase(database).GetCollection<Models.Video>("videos");
+            return Client.GetDatabase(database).GetCollection<Video>("videos");
+        }
+
+        public IMongoCollection<Series> GetSeriesCollection()
+        {
+            return Client.GetDatabase(database).GetCollection<Series>("series");
         }
     }
 }

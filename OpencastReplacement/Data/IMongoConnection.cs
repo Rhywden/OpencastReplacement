@@ -8,5 +8,6 @@ namespace OpencastReplacement.Data
 
         public IMongoCollection<Models.Tag> GetTagCollection();
         public IMongoCollection<Models.Video> GetVideoCollection();
+        public IMongoCollection<Models.Series> GetSeriesCollection();
     }
 }

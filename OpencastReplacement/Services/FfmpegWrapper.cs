@@ -77,6 +77,7 @@ namespace OpencastReplacement.Services
                         .WithFastStart())
                     .NotifyOnProgress(progressHandler, media.Duration)
                     .ProcessAsynchronously();
+                File.Delete(input);
                 var index = repository.Conversions.FindIndex(c => c.VideoId.Equals(video.Id));
                 repository.Conversions.RemoveAt(index);
                 await conversionProgressEvent.Update(evtArgs);
@@ -86,10 +87,7 @@ namespace OpencastReplacement.Services
                     Height = media.PrimaryVideoStream!.Height,
                     Width = media.PrimaryVideoStream!.Width,
                 };
-                var coll = _connection.GetVideoCollection();
-                await coll.InsertOneAsync(vid);
-                repository.Videos.Add(vid);
-                await videoAddedEvent.Update(true);
+                repository.AddVideo(vid);
             } catch (Exception e) {
                 logger.LogCritical($"FFMpeg threw error: {e.InnerException}");
             }

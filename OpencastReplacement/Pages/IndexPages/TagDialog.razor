@@ -18,7 +18,7 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [CascadingParameter] MudDialogInstance? MudDialog { get; set; }
     [Parameter] public Guid id { get; set; } = Guid.NewGuid();
 
     private ClaimsPrincipal? user;
@@ -51,12 +51,12 @@
 
     private void Cancel()
     {
-        MudDialog.Cancel();
+        MudDialog?.Cancel();
     }
 
     private void Save()
     {
         var res = new TagResult { Id = id, Tag = value ?? string.Empty };
-        MudDialog.Close(DialogResult.Ok(res));
+        MudDialog?.Close(DialogResult.Ok(res));
     }
 }

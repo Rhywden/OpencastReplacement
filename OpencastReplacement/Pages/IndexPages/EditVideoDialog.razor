@@ -1,0 +1,42 @@
+﻿@using OpencastReplacement.Data
+@using OpencastReplacement.Models
+@using System.Security.Claims
+@inject IDataRepository DataRepository
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Video editieren</MudText>
+    </TitleContent>
+    <DialogContent>
+        
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Save" Color="Color.Primary">Erstellen</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance? MudDialog { get; set; }
+    [Parameter] public Video? video { get; set; }
+
+    private ClaimsPrincipal? user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+    }
+
+    private void Save()
+    {
+        //var res = new TagResult { Id = id, Tag = value ?? string.Empty };
+        //MudDialog?.Close(DialogResult.Ok(res));
+    }
+}
