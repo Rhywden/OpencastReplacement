@@ -40,7 +40,10 @@
                   @ondragleave="@(()=>_dragEnterStyle=null)"
                   @ondragend="@(()=>_dragEnterStyle=null)"
                   Class=@("drag-drop-zone "+ _dragEnterStyle)>
-            <MudText Typo="Typo.h5">Zum Hochladen hier clicken oder eine Datei per Drag'n'Drop ablegen</MudText>
+                <MudText Typo="Typo.h5">
+                    Zum Hochladen hier clicken oder eine Datei per Drag'n'Drop ablegen<br />
+                    Maximale Dateigröße: 800 MB
+                </MudText>
             <InputFile OnChange="@LoadFiles" multiple class="drag-drop-input" />
         </MudPaper>
         @if (isLoading)
@@ -120,7 +123,7 @@
     private string? _dragEnterStyle;
     private bool Check480p { get; set; }
     private List<UploadedFile> loadedFiles = new();
-    private long maxFileSize = 1024 * 1024 * 500;
+    private long maxFileSize = 1024 * 1024 * 800;
     private double conversionProgress = 0;
     private int maxAllowedFiles = 3;
     private bool isLoading;
