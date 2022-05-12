@@ -41,18 +41,6 @@ namespace OpencastReplacement.Data
             await videoAddedEvent.Update(true);
         }
 
-        public async void DeleteVideo(Video vid)
-        {
-            var coll = _connection.GetVideoCollection();
-            var filter = Builders<Video>.Filter.Eq("_id", vid.Id);
-            await coll.DeleteOneAsync(filter);
-            string output = Path.Combine(hostingEnv.ContentRootPath,
-                        "wwwroot", "uploads", vid.FileName);
-            File.Delete(output);
-            Videos.Remove(vid);
-            await videoAddedEvent.Update(false);
-        }
-
         public async void UpdateVideo(Video vid)
         {
             var coll = _connection.GetVideoCollection();

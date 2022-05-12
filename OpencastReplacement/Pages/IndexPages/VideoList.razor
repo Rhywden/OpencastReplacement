@@ -3,6 +3,9 @@
 @using OpencastReplacement.Events
 @using OpencastReplacement.Helpers
 @using OpencastReplacement.Models
+@using OpencastReplacement.Store
+@using Rudder
+@using System.Collections.Immutable
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IDataRepository DataRepository
 @inject VideoAddedEvent VideoAddedEvent
@@ -11,6 +14,8 @@
 @inject IDialogService DialogService
 
 @implements IDisposable
+
+@inherits StateComponent<AppState>
 
 <MudPaper Class="pa-3 ma-3">
     <MudGrid>
@@ -60,7 +65,7 @@
         </tr>
     </thead>
     <tbody>
-        @foreach(var vid in videosFilteredByOwner)
+        @foreach(var vid in _videosFilteredByOwner)
         {
             <tr @key="IdToKeyVideoList(vid.Id)">
                 <td>
@@ -99,14 +104,15 @@
 
 @code {
     private ClaimsPrincipal? user;
-    private List<Video> videos => DataRepository.Videos.Where(vid => vid.Public || vid.UserId.Equals(user?.Identity?.Name)).ToList();
     private StringEqualityComparer comparer = new();
-    private List<Video> videosFiltered => (string.IsNullOrWhiteSpace(value)) ? videos.ToList() : videos.Where(v => v.FileName.Contains(value, StringComparison.InvariantCultureIgnoreCase) || v.Tags.Contains<string>(value, comparer)).ToList();
-    private List<Video> videosFilteredByOwner => showOnlyOwnVideos ? videosFiltered.Where(v => v.UserId.Equals(user?.Identity?.Name)).ToList() : videosFiltered;
     private List<string> list = new();
     private MudAutocomplete<string>? autocomplete;
     private bool showOnlyOwnVideos = true;
     private List<Guid> selectedIds = new();
+
+    private ImmutableList<Video> _videos = ImmutableList<Video>.Empty;
+    private ImmutableList<Video> _videosFiltered => (string.IsNullOrWhiteSpace(value)) ? _videos : ImmutableList<Video>.Empty.AddRange(_videos.Where(v => v.FileName.Contains(value, StringComparison.InvariantCultureIgnoreCase) || v.Tags.Contains<string>(value, comparer)));
+    private ImmutableList<Video> _videosFilteredByOwner => showOnlyOwnVideos ? ImmutableList<Video>.Empty.AddRange(_videosFiltered.Where(v => v.UserId.Equals(user?.Identity?.Name))) : _videosFiltered;
 
     private bool showSelector = false;
 
@@ -117,7 +123,7 @@
     protected override async Task OnInitializedAsync()
     {
         user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
-        VideoAddedEvent.Notify += OnVideoUpdate;
+        UseState(state => _videos = state.Videos);
     }
 
     private string IdToKeyVideoList(Guid id)
@@ -135,14 +141,6 @@
     private string ByteToMegabyte(long bytes)
     {
         return String.Format("{0:0.00}", bytes / (1024.0 * 1024.0));
-    }
-
-    private async Task OnVideoUpdate(bool added)
-    {
-        await InvokeAsync(() =>
-        {
-            StateHasChanged();
-        });
     }
 
     private void ToggleSelection(Video vid)
@@ -169,7 +167,8 @@
         bool? result = await DialogService.ShowMessageBox("Warnung", "Das Video wird permanent gelöscht!", yesText: "Löschen!");
         if(result == true)
         {
-            DataRepository.DeleteVideo(video);
+            Put(new Actions.DeleteVideo.Request(video));
+            //DataRepository.DeleteVideo(video);
             StateHasChanged();
         }
     }
@@ -226,10 +225,5 @@
             return list;
         }
         return list.Where(x => x.Contains(val, StringComparison.InvariantCultureIgnoreCase));
-    }
-
-    public void Dispose()
-    {
-        VideoAddedEvent.Notify -= OnVideoUpdate;
     }
 }

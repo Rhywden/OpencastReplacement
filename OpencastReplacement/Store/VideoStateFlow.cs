@@ -9,6 +9,8 @@ namespace OpencastReplacement.Store
             Actions.LoadVideos.Request => state with { VideosAreLoading = true },
             Actions.LoadVideos.Success action => state with { Videos = action.videos },
             Actions.LoadVideos.Error action => state with { ErrorMessage = action.message },
+            Actions.DeleteVideo.Success action => state with { Videos = action.videos },
+            Actions.DeleteVideo.Error action => state with { ErrorMessage = action.message },
             _ => state
         };
     }

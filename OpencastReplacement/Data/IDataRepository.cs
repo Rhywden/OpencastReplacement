@@ -12,7 +12,6 @@ namespace OpencastReplacement.Data
         public Task Init();
 
         public void AddVideo(Video vid);
-        public void DeleteVideo(Video vid);
         public void UpdateVideo(Video vid);
 
         public void AddTag(Tag tag);
