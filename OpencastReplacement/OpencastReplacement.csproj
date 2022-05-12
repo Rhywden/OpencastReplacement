@@ -9,14 +9,16 @@
 
   <ItemGroup>
     <PackageReference Include="FFMpegCore" Version="4.8.0" />
-    <PackageReference Include="Fluxor" Version="5.2.0" />
-    <PackageReference Include="Fluxor.Blazor.Web" Version="5.2.0" />
-    <PackageReference Include="Fluxor.Blazor.Web.ReduxDevTools" Version="5.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="6.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="6.0.5" />
     <PackageReference Include="Microsoft.Identity.Web" Version="1.24.1" />
     <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.24.1" />
-    <PackageReference Include="MongoDB.Driver" Version="2.15.0" />
-    <PackageReference Include="MudBlazor" Version="6.0.9" />
+    <PackageReference Include="MongoDB.Driver" Version="2.15.1" />
+    <PackageReference Include="MudBlazor" Version="6.0.10" />
+    <PackageReference Include="Rudder" Version="2.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Store\" />
   </ItemGroup>
 
 </Project>

@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using OpencastReplacement.Services;
-using Fluxor;
 using OpencastReplacement.Data;
 using MudBlazor.Services;
 using Microsoft.Identity.Web.UI;
@@ -34,13 +33,7 @@ if (!Environment.IsDevelopment())
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor().AddMicrosoftIdentityConsentHandler(); 
-builder.Services.AddFluxor(opt =>
-{
-    opt.ScanAssemblies(typeof(Program).Assembly);
-    opt.UseRouting();
-    opt.UseReduxDevTools();
-});
+builder.Services.AddServerSideBlazor().AddMicrosoftIdentityConsentHandler();
 
 builder.Services.AddSingleton<IFfmpegWrapper, FfmpegWrapper>();
 builder.Services.AddSingleton<IMongoConnection>(mc => new MongoConnection(Configuration["mongodb:connection"], Environment));

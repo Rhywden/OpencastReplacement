@@ -1,6 +1,5 @@
 ﻿using FFMpegCore;
 using FFMpegCore.Enums;
-using Fluxor;
 using OpencastReplacement.Data;
 using OpencastReplacement.Events;
 using OpencastReplacement.Models;
