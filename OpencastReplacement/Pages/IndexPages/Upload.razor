@@ -228,8 +228,8 @@
         {
             try
             {
-                 var path = Path.Combine(Environment.ContentRootPath,
-                    "wwwroot","temp", file.Name);
+                var path = Path.Combine(Environment.ContentRootPath,
+                   "wwwroot","temp", file.Name);
 
                 await using FileStream writeStream = new(path, FileMode.Create);
                 using var readStream = file.OpenReadStream(maxFileSize);
@@ -258,8 +258,14 @@
 
                 loadedFiles.Add(fil);
             }
+            catch(IOException ioExc)
+            {
+                Logger.LogError($"File: {file.Name}, HResult: {ioExc.HResult} Error: {ioExc.Message}");
+                //TODO: Catch file too large and show error
+            }
             catch (Exception ex)
             {
+                
                 Logger.LogError("File: {Filename} Error: {Error}", 
                     file.Name, ex.Message);
             }
