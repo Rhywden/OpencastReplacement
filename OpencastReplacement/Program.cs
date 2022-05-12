@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Microsoft.IdentityModel.Tokens;
 using OpencastReplacement.Events;
+using Rudder;
+using OpencastReplacement.Store;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +51,15 @@ builder.Services.AddSingleton<FileQueueMonitor>();
 builder.Services.AddSingleton<IDataRepository, DataRepository>();
 
 builder.Services.AddMudServices();
+builder.Services.AddRudder<AppState>(options =>
+{
+    options.AddStateInitializer<AppStateInitializer>();
+    options.AddStateFlows();
+    options.AddLogicFlows();
+#if DEBUG
+    options.AddJsLogging(); // Logging middleware
+#endif
+});
 
 builder.Services.AddAuthentication(options =>
 {
