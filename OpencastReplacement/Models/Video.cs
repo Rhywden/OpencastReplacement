@@ -3,7 +3,7 @@ using OpencastReplacement.Helpers;
 
 namespace OpencastReplacement.Models
 {
-    public record Video
+    public record Video : IMongoEntry
     {
         [BsonId]
         public Guid Id { get; init; } = Guid.NewGuid();

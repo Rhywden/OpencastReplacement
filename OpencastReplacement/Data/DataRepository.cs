@@ -38,7 +38,7 @@ namespace OpencastReplacement.Data
             var coll = _connection.GetVideoCollection();
             await coll.InsertOneAsync(vid);
             Videos.Add(vid);
-            await videoAddedEvent.Update(true);
+            await videoAddedEvent.Update(vid);
         }
 
         public async void UpdateVideo(Video vid)
@@ -51,7 +51,7 @@ namespace OpencastReplacement.Data
             {
                 Videos[index] = vid;
             }
-            await videoAddedEvent.Update(false);
+            await videoAddedEvent.Update(vid);
         }
 
         public void AddTag(Models.Tag tag)
@@ -74,7 +74,7 @@ namespace OpencastReplacement.Data
             var coll = _connection.GetSeriesCollection();
             await coll.InsertOneAsync(series);
             Series.Add(series);
-            await videoAddedEvent.Update(true);
+            await videoAddedEvent.Update(null);
         }
 
         public async void UpdateSeries(Series series)
@@ -83,7 +83,7 @@ namespace OpencastReplacement.Data
             var filter = Builders<Series>.Filter.Eq("_id", series.Id);
             await coll.DeleteOneAsync(filter);
             Series.Remove(series);
-            await videoAddedEvent.Update(false);
+            await videoAddedEvent.Update(null);
         }
 
         public async void DeleteSeries(Series series)
@@ -96,7 +96,7 @@ namespace OpencastReplacement.Data
             {
                 Series[index] = series;
             }
-            await videoAddedEvent.Update(false);
+            await videoAddedEvent.Update(null);
         }
     }
 }

@@ -3,6 +3,8 @@ using FFMpegCore.Enums;
 using OpencastReplacement.Data;
 using OpencastReplacement.Events;
 using OpencastReplacement.Models;
+using OpencastReplacement.Store;
+using Rudder;
 
 namespace OpencastReplacement.Services
 {
@@ -16,7 +18,7 @@ namespace OpencastReplacement.Services
         private IDataRepository repository;
         private IMongoConnection _connection;
 
-        public FfmpegWrapper(IWebHostEnvironment env, 
+        public FfmpegWrapper(IWebHostEnvironment env,
             ILogger<FfmpegWrapper> log, 
             ConfigurationWrapper conf, 
             ConversionProgressEvent evt,
@@ -86,7 +88,8 @@ namespace OpencastReplacement.Services
                     Height = media.PrimaryVideoStream!.Height,
                     Width = media.PrimaryVideoStream!.Width,
                 };
-                repository.AddVideo(vid);
+                await videoAddedEvent.Update(video: vid);
+                //_store.Put(new Actions.AddVideo.Request(videoToBeAdded: vid));
             } catch (Exception e) {
                 logger.LogCritical($"FFMpeg threw error: {e.InnerException}");
             }

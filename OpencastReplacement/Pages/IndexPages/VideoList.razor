@@ -43,63 +43,33 @@
         </MudItem>
     </MudGrid>
     
-    
-    
 </MudPaper>
 
-<MudSimpleTable Hover="false">
-    <thead>
-        <tr>
-            <th></th>
-            <th>Name</th>
-            <th>Ersteller</th>
-            <th>Größe (MB)</th>
-            <th>Dauer</th>
-            <th>Tags</th>
-            <th>Öffentlich</th>
-            <th>Auflösung</th>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach(var vid in _videosFilteredByOwner)
-        {
-            <tr @key="IdToKeyVideoList(vid.Id)">
-                <td>
-                    @if(showSelector)
-                    {
-                        <MudCheckBox T="bool" Checked="(IsSelected(vid))" CheckedChanged="(() => ToggleSelection(vid))"></MudCheckBox>
-                    }
-                </td>
-                <td>@vid.FileName</td>
-                <td>@vid.UserId</td>
-                <td>@ByteToMegabyte(@vid.FileSize)</td>
-                <td>@vid.Duration.Hours:@vid.Duration.Minutes:@vid.Duration.Seconds</td>
-                <td>
-                    @foreach(var tag in vid.Tags)
-                    {
-                        <MudChip Color="Color.Default">@tag</MudChip>
-                    }
-                </td>
-                <td>@(vid.Public ? "Öffentlich" : "Privat")</td>
-                <td>@($"{vid.Width}x{vid.Height}")</td>
-                <td><MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Video?id={vid.Id}") Color="Color.Secondary"></MudIconButton></td>
-                <td><MudButton Variant="Variant.Outlined" OnClick="(() => LinkToClipboard(vid.Id))">Link kopieren</MudButton></td>
-                <td><MudButton Variant="Variant.Filled" OnClick="(() => EmbedToClipboard(vid))">Embedcode kopieren</MudButton></td>
-                <td>
-                    @if (vid.UserId.Equals(user?.Identity?.Name))
-                    {
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="(() => OpenEditDialog(vid))" Color="Color.Info"></MudIconButton>
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="(() => DeleteVideo(vid))" Color="Color.Warning"></MudIconButton>
-                    }
-                </td>
-            </tr>
-        }
-    </tbody>
-</MudSimpleTable>
+<MudExpansionPanels>
+    @foreach(var vid in _videosFilteredByOwner)
+    {
+        <MudExpansionPanel @key="IdToKeyVideoList(vid.Id)">
+            <TitleContent>
+                <MudGrid>
+                    <MudItem xs="4">
+                        @vid.FileName
+                    </MudItem>
+                    <MudItem xs="2">
+                        @vid.Duration.Hours:@vid.Duration.Minutes:@vid.Duration.Seconds
+                    </MudItem>
+                    <MudItem>
+                        @foreach(var tag in vid.Tags)
+                        {
+                            <MudChip Color="Color.Default">@tag</MudChip>
+                        }
+                    </MudItem>
+                </MudGrid>
+            </TitleContent>
+        </MudExpansionPanel>
+    }
+</MudExpansionPanels>
+
+
 
 
 @code {
@@ -226,4 +196,60 @@
         }
         return list.Where(x => x.Contains(val, StringComparison.InvariantCultureIgnoreCase));
     }
+
+/*
+<MudSimpleTable Hover="false">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Name</th>
+            <th>Ersteller</th>
+            <th>Größe (MB)</th>
+            <th>Dauer</th>
+            <th>Tags</th>
+            <th>Öffentlich</th>
+            <th>Auflösung</th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach(var vid in _videosFilteredByOwner)
+        {
+            <tr @key="IdToKeyVideoList(vid.Id)">
+                <td>
+                    @if(showSelector)
+                    {
+                        <MudCheckBox T="bool" Checked="(IsSelected(vid))" CheckedChanged="(() => ToggleSelection(vid))"></MudCheckBox>
+                    }
+                </td>
+                <td>@vid.FileName</td>
+                <td>@vid.UserId</td>
+                <td>@ByteToMegabyte(@vid.FileSize)</td>
+                <td>@vid.Duration.Hours:@vid.Duration.Minutes:@vid.Duration.Seconds</td>
+                <td>
+                    @foreach(var tag in vid.Tags)
+                    {
+                        <MudChip Color="Color.Default">@tag</MudChip>
+                    }
+                </td>
+                <td>@(vid.Public ? "Öffentlich" : "Privat")</td>
+                <td>@($"{vid.Width}x{vid.Height}")</td>
+                <td><MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Video?id={vid.Id}") Color="Color.Secondary"></MudIconButton></td>
+                <td><MudButton Variant="Variant.Outlined" OnClick="(() => LinkToClipboard(vid.Id))">Link kopieren</MudButton></td>
+                <td><MudButton Variant="Variant.Filled" OnClick="(() => EmbedToClipboard(vid))">Embedcode kopieren</MudButton></td>
+                <td>
+                    @if (vid.UserId.Equals(user?.Identity?.Name))
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="(() => OpenEditDialog(vid))" Color="Color.Info"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="(() => DeleteVideo(vid))" Color="Color.Warning"></MudIconButton>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</MudSimpleTable>
+*/
 }

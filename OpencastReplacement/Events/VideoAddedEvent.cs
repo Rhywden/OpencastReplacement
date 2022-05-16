@@ -1,15 +1,17 @@
-﻿namespace OpencastReplacement.Events
+﻿using OpencastReplacement.Models;
+
+namespace OpencastReplacement.Events
 {
     public class VideoAddedEvent
     {
-        public async Task Update(bool added)
+        public async Task Update(Video? video)
         {
             if(Notify is not null)
             {
-                await Notify.Invoke(added);
+                await Notify.Invoke(video);
             }
         }
 
-        public event Func<bool, Task>? Notify;
+        public event Func<Video?, Task>? Notify;
     }
 }
