@@ -25,7 +25,7 @@ namespace OpencastReplacement.Controllers
 
             string title = vid.FileName;
             string pathToVideo = $"/uploads/{vid.FileName}";
-            string output = string.Join(System.Environment.NewLine, new string[]
+            /*string output = string.Join(System.Environment.NewLine, new string[]
             {
                 "<!DOCTYPE html>",
                 "<html>",
@@ -44,8 +44,25 @@ namespace OpencastReplacement.Controllers
                 "</script>",
                 "</body>",
                 "</html>"
-            });
+            });*/
 
+            string output = string.Join(System.Environment.NewLine, new string[]
+            {
+                "<!DOCTYPE html>",
+                "<html>",
+                "<head>",
+                "<meta charset=\"utf-8\">",
+                $"<title>{title}</title>",
+                "<link rel=\"stylesheet\" href=\"https://vjs.zencdn.net/7.18.1/video-js.css\" />",
+                "</head>",
+                "<body>",
+                "<video id=\"player\" class=\"video-js\" controls preload=\"auto\" data-setup=\"{}\" fluid liveui >",
+                $"<source src=\"{pathToVideo}\" type=\"video/mp4\" />",
+                "</video>",
+                "<script src=\"https://vjs.zencdn.net/7.18.1/video.min.js\"></script>",
+                "</body>",
+                "</html>"
+            });
 
             return new ContentResult { 
                 Content = output,

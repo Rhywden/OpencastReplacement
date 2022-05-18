@@ -89,7 +89,6 @@ namespace OpencastReplacement.Services
                     Width = media.PrimaryVideoStream!.Width,
                 };
                 await videoAddedEvent.Update(video: vid);
-                //_store.Put(new Actions.AddVideo.Request(videoToBeAdded: vid));
             } catch (Exception e) {
                 logger.LogCritical($"FFMpeg threw error: {e.InnerException}");
             }

@@ -17,9 +17,9 @@
 
 @inherits StateComponent<AppState>
 
-<MudPaper Class="pa-3 ma-3">
+<MudPaper Class="pa-4 ma-3" Elevation="8">
     <MudGrid>
-        <MudItem xs="4">
+        <MudItem xs="9" md="10" lg="4">
             <MudAutocomplete @bind-Value="value"
                 @ref="autocomplete"
                 Label="Suche"
@@ -29,16 +29,16 @@
                 AdornmentIcon="@Icons.Material.Filled.Search"
                 ResetValueOnEmptyText="true" />
         </MudItem>
-        <MudItem xs="1">
+        <MudItem xs="3" md="2" lg="1">
             <MudButton OnClick="ResetSearch" Variant="Variant.Outlined">Reset</MudButton>
         </MudItem>
-        <MudItem xs="2">
+        <MudItem xs="12" md="4" lg="2">
             <MudCheckBox @bind-Checked="@showOnlyOwnVideos" Label="Nur eigene Videos zeigen"></MudCheckBox>
         </MudItem>
-        <MudItem xs="2">
+        <MudItem xs="12" md="4" lg="2">
             <MudCheckBox @bind-Checked="@showSelector" Label="Videos für Serie aussuchen"></MudCheckBox>
         </MudItem>
-        <MudItem xs="3">
+        <MudItem xs="12" md="4" lg="2">
             <MudButton Variant="Variant.Filled" Disabled="(selectedIds.Count == 0)" OnClick="() => OpenCreateSeriesDialog()">Serie erstellen</MudButton>
         </MudItem>
     </MudGrid>
@@ -48,24 +48,54 @@
 <MudExpansionPanels>
     @foreach(var vid in _videosFilteredByOwner)
     {
-        <MudExpansionPanel @key="IdToKeyVideoList(vid.Id)">
-            <TitleContent>
-                <MudGrid>
-                    <MudItem xs="4">
-                        @vid.FileName
-                    </MudItem>
-                    <MudItem xs="2">
-                        @vid.Duration.Hours:@vid.Duration.Minutes:@vid.Duration.Seconds
-                    </MudItem>
-                    <MudItem>
-                        @foreach(var tag in vid.Tags)
-                        {
-                            <MudChip Color="Color.Default">@tag</MudChip>
-                        }
-                    </MudItem>
-                </MudGrid>
-            </TitleContent>
-        </MudExpansionPanel>
+        <MudPaper Class="pa-3 ma-3">
+            <MudGrid>
+                <MudItem xs="8" md="5">
+                    @if(showSelector)
+                    {
+                        <MudCheckBox T="bool" Checked="(IsSelected(vid))" CheckedChanged="(() => ToggleSelection(vid))"></MudCheckBox>
+                    }
+                    @vid.FileName
+                </MudItem>
+                <MudItem xs="4" md="3">
+                    @vid.UserId
+                </MudItem>
+                <MudItem xs="6" md="2">
+                    @ByteToMegabyte(@vid.FileSize) MB
+                </MudItem>
+                <MudItem xs="6" md="2">
+                    @(vid.Duration.Hours)h:@(vid.Duration.Minutes)m:@(vid.Duration.Seconds)s
+                </MudItem>
+                <MudItem xs="12">
+                    @foreach(var tag in vid.Tags)
+                    {
+                        <MudChip Color="Color.Default">@tag</MudChip>
+                    }
+                </MudItem>
+                <MudItem xs="4">
+                    @(vid.Public ? "Öffentlich" : "Privat")
+                </MudItem>
+                <MudItem xs="4">
+                    @(vid.Width)x@(vid.Height)
+                </MudItem>
+                <MudItem xs="4">
+                    <MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Video?id={vid.Id}") Color="Color.Secondary"></MudIconButton>
+                </MudItem>
+                <MudItem xs="4">
+                    <MudButton Variant="Variant.Outlined" OnClick="(() => LinkToClipboard(vid.Id))">Direktlink kopieren</MudButton>
+                </MudItem>
+                <MudItem xs="4">
+                    <MudButton Variant="Variant.Filled" OnClick="(() => EmbedToClipboard(vid))">Embedcode kopieren</MudButton>
+                </MudItem>
+                <MudItem xs="4">
+                    @if (vid.UserId.Equals(user?.Identity?.Name))
+                    {
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="(() => OpenEditDialog(vid))" Color="Color.Info"></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="(() => DeleteVideo(vid))" Color="Color.Warning"></MudIconButton>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
     }
 </MudExpansionPanels>
 
