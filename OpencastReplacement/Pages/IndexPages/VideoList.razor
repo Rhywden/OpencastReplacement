@@ -50,21 +50,21 @@
     {
         <MudPaper Class="pa-3 ma-3">
             <MudGrid>
-                <MudItem xs="8" md="5">
+                <MudItem xs="6" md="5">
                     @if(showSelector)
                     {
                         <MudCheckBox T="bool" Checked="(IsSelected(vid))" CheckedChanged="(() => ToggleSelection(vid))"></MudCheckBox>
                     }
                     @vid.FileName
                 </MudItem>
-                <MudItem xs="4" md="3">
+                <MudItem xs="6" md="3">
                     @vid.UserId
                 </MudItem>
                 <MudItem xs="6" md="2">
-                    @ByteToMegabyte(@vid.FileSize) MB
+                    @(vid.Width)x@(vid.Height)
                 </MudItem>
                 <MudItem xs="6" md="2">
-                    @(vid.Duration.Hours)h:@(vid.Duration.Minutes)m:@(vid.Duration.Seconds)s
+                    @(vid.Duration.Hours)h:@(vid.Duration.Minutes)m:@(vid.Duration.Seconds)s (@ByteToMegabyte(@vid.FileSize) MB)
                 </MudItem>
                 <MudItem xs="12">
                     @foreach(var tag in vid.Tags)
@@ -72,22 +72,19 @@
                         <MudChip Color="Color.Default">@tag</MudChip>
                     }
                 </MudItem>
-                <MudItem xs="4">
-                    @(vid.Public ? "Öffentlich" : "Privat")
-                </MudItem>
-                <MudItem xs="4">
-                    @(vid.Width)x@(vid.Height)
-                </MudItem>
-                <MudItem xs="4">
-                    <MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Video?id={vid.Id}") Color="Color.Secondary"></MudIconButton>
-                </MudItem>
-                <MudItem xs="4">
+                <MudItem xs="6" md="4">
                     <MudButton Variant="Variant.Outlined" OnClick="(() => LinkToClipboard(vid.Id))">Direktlink kopieren</MudButton>
                 </MudItem>
-                <MudItem xs="4">
+                <MudItem xs="6" md="4">
                     <MudButton Variant="Variant.Filled" OnClick="(() => EmbedToClipboard(vid))">Embedcode kopieren</MudButton>
                 </MudItem>
-                <MudItem xs="4">
+                <MudItem xs="12" md="4">
+                    @if(@vid.Public) {
+                        <MudIconButton Icon="@Icons.Material.Filled.Public"></MudIconButton>
+                    } else {
+                        <MudIconButton Icon="@Icons.Material.Filled.PublicOff"></MudIconButton>
+                    }
+                    <MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Video?id={vid.Id}") Color="Color.Secondary"></MudIconButton>
                     @if (vid.UserId.Equals(user?.Identity?.Name))
                     {
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="(() => OpenEditDialog(vid))" Color="Color.Info"></MudIconButton>
@@ -164,7 +161,7 @@
 
     private async void DeleteVideo(Video video)
     {
-        bool? result = await DialogService.ShowMessageBox("Warnung", "Das Video wird permanent gelöscht!", yesText: "Löschen!");
+        bool? result = await DialogService.ShowMessageBox("Warnung", "Das Video wird permanent gelöscht!", yesText: "Löschen!", noText: null, cancelText: "Abbrechen");
         if(result == true)
         {
             Put(new Actions.DeleteVideo.Request(video));
