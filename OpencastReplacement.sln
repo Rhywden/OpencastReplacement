@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.32126.317
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpencastReplacement", "OpencastReplacement\OpencastReplacement.csproj", "{90A9A02C-EE33-494C-9C27-5A39E625DDA1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RudderSingleton", "RudderSingleton\RudderSingleton.csproj", "{042939AC-F3CE-4EEC-BE34-D1456CDE58B5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{90A9A02C-EE33-494C-9C27-5A39E625DDA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{90A9A02C-EE33-494C-9C27-5A39E625DDA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{90A9A02C-EE33-494C-9C27-5A39E625DDA1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{042939AC-F3CE-4EEC-BE34-D1456CDE58B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{042939AC-F3CE-4EEC-BE34-D1456CDE58B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{042939AC-F3CE-4EEC-BE34-D1456CDE58B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{042939AC-F3CE-4EEC-BE34-D1456CDE58B5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

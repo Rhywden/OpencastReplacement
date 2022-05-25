@@ -17,4 +17,8 @@
     <PackageReference Include="Rudder" Version="2.0.5" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RudderSingleton\RudderSingleton.csproj" />
+  </ItemGroup>
+
 </Project>

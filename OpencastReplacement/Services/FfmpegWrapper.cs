@@ -4,7 +4,7 @@ using OpencastReplacement.Data;
 using OpencastReplacement.Events;
 using OpencastReplacement.Models;
 using OpencastReplacement.Store;
-using Rudder;
+using RudderSingleton;
 
 namespace OpencastReplacement.Services
 {

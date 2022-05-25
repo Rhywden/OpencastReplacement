@@ -1,4 +1,4 @@
-﻿using Rudder;
+﻿using RudderSingleton;
 
 namespace OpencastReplacement.Store
 {

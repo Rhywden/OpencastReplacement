@@ -1,7 +1,7 @@
 ﻿using MongoDB.Driver;
 using OpencastReplacement.Data;
 using OpencastReplacement.Models;
-using Rudder;
+using RudderSingleton;
 using System.Collections.Immutable;
 
 namespace OpencastReplacement.Store

@@ -3,7 +3,7 @@ using OpencastReplacement.Data;
 using OpencastReplacement.Events;
 using OpencastReplacement.Helpers;
 using OpencastReplacement.Models;
-using Rudder;
+using RudderSingleton;
 using System.Collections.Immutable;
 
 namespace OpencastReplacement.Store
