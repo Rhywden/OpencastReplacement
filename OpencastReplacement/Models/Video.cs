@@ -9,6 +9,9 @@ namespace OpencastReplacement.Models
         public Guid Id { get; init; } = Guid.NewGuid();
         public string UserId { get; init; } = default!;
         public string FileName { get; init; } = default!;
+        public string? Titel { get; init; }
+        public string? Beschreibung { get; init; }
+        public string? Poster { get; init; }
         public Guid? SerienId { get; init; }
         public long FileSize { get; init; } = default!;
         public ComparableList<string> Tags { get; init; } = new();

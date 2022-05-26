@@ -1,0 +1,72 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
+using OpencastReplacement.Data;
+using OpencastReplacement.Models;
+
+namespace OpencastReplacement.Controllers
+{
+    [Route("/[controller]")]
+    [ApiController]
+    public class SeriesController : ControllerBase
+    {
+        private readonly IMongoConnection connection;
+
+        public SeriesController(IMongoConnection conn)
+        {
+            connection = conn;
+        }
+
+        [HttpGet]
+        public IActionResult Get(string id)
+        {
+            /*var collection = connection.GetSeriesCollection();
+            var filter = Builders<Series>.Filter.Eq("_id", id);
+            var result = collection.FindSync(filter);
+            var series = result.FirstOrDefault();*/
+
+            string output = string.Join(System.Environment.NewLine, new string[]
+            {
+                "<!DOCTYPE html>",
+                "<html>",
+                "<head>",
+                "<meta charset=\"utf-8\">",
+                $"<title>Test</title>",
+                "<link rel=\"stylesheet\" href=\"https://vjs.zencdn.net/7.18.1/video-js.css\" />",
+                "<link rel=\"stylesheet\" href=\"/css/videojs-playlist-ui.vertical.css\" />",
+                "</head>",
+                "<body>",
+                "<video id=\"player\" class=\"video-js\" controls preload=\"auto\" data-setup=\"{}\" fluid liveui >",
+                "</video>",
+                "<div class=\"vjs-playlist\"></div>",
+                "<script src=\"https://vjs.zencdn.net/7.18.1/video.min.js\"></script>",
+                "<script src=\"js/videojs-playlist.min.js\"></script>",
+                "<script src=\"js/videojs-playlist-ui.min.js\"></script>",
+                "<script>",
+                "var player = videojs('player');",
+                "player.playlistUi();",
+                "player.playlist([",
+                "{\"sources\": [{",
+                "\"src\": \"/uploads/023 Shockley, Bardeen, Brattain und der Transistor.mp4\",",
+                "\"type\": \"video/mp4\"",
+                "}],",
+                "\"poster\": \"http://media.w3.org/2010/05/bunny/poster.png\"",
+                "},",
+                "{\"sources\": [{",
+                "\"src\": \"/uploads/CYMATICS Science Vs. Music - Nigel Stanford.mp4\",",
+                "\"type\": \"video/mp4\"",
+                "}],",
+                "\"poster\": \"http://media.w3.org/2010/05/bunny/poster.png\"",
+                "}",
+                "]);",
+                "</script>",
+                "</body>",
+                "</html>"
+            });
+            return new ContentResult
+            {
+                Content = output,
+                ContentType = "text/html"
+            };
+        }
+    }
+}

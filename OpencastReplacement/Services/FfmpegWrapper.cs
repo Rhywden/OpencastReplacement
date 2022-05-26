@@ -17,6 +17,7 @@ namespace OpencastReplacement.Services
         private VideoAddedEvent videoAddedEvent;
         private IDataRepository repository;
         private IMongoConnection _connection;
+        private readonly Store<AppState> _store;
 
         public FfmpegWrapper(IWebHostEnvironment env,
             ILogger<FfmpegWrapper> log, 
@@ -24,7 +25,8 @@ namespace OpencastReplacement.Services
             ConversionProgressEvent evt,
             VideoAddedEvent _videoAddedEvent,
             IDataRepository repo, 
-            IMongoConnection connection)
+            IMongoConnection connection,
+            Store<AppState> store)
         {
             hostingEnv = env;
             logger = log;
@@ -33,6 +35,7 @@ namespace OpencastReplacement.Services
             repository = repo;
             _connection = connection;
             videoAddedEvent = _videoAddedEvent;
+            _store = store;
         }
         public Task<bool> CancelEncoding(string id)
         {
@@ -88,7 +91,8 @@ namespace OpencastReplacement.Services
                     Height = media.PrimaryVideoStream!.Height,
                     Width = media.PrimaryVideoStream!.Width,
                 };
-                await videoAddedEvent.Update(video: vid);
+                _store.Put(new Actions.AddVideo.Request(videoToBeAdded: vid));
+                //await videoAddedEvent.Update(video: vid);
             } catch (Exception e) {
                 logger.LogCritical($"FFMpeg threw error: {e.InnerException}");
             }
