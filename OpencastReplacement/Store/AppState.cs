@@ -6,6 +6,8 @@ namespace OpencastReplacement.Store
     public record AppState
     {
         public bool VideosAreLoading { get; init; } = false;
+        public bool SeriesAreLoading { get; init; } = false;
+        public bool TagsAreLoading { get; init; } = false;
         public string ErrorMessage { get; init; } = string.Empty;
         public ImmutableList<Video> Videos { get; init; } = ImmutableList<Video>.Empty;
         public ImmutableList<Conversion> Conversions { get; init; } = ImmutableList<Conversion>.Empty;

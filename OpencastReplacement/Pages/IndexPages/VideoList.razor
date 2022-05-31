@@ -12,6 +12,7 @@
 @inject IJSRuntime JSRuntime
 @inject IWebHostEnvironment Environment
 @inject IDialogService DialogService
+@inject IMongoConnection MongoConnection
 
 @implements IDisposable
 
@@ -45,56 +46,56 @@
     
 </MudPaper>
 
-<MudExpansionPanels>
-    @foreach(var vid in _videosFilteredByOwner)
-    {
-        <MudPaper Class="pa-3 ma-3">
-            <MudGrid>
-                <MudItem xs="6" md="5">
-                    @if(showSelector)
-                    {
-                        <MudCheckBox T="bool" Checked="(IsSelected(vid))" CheckedChanged="(() => ToggleSelection(vid))"></MudCheckBox>
-                    }
-                    @vid.FileName
-                </MudItem>
-                <MudItem xs="6" md="3">
-                    @vid.UserId
-                </MudItem>
-                <MudItem xs="6" md="2">
-                    @(vid.Width)x@(vid.Height)
-                </MudItem>
-                <MudItem xs="6" md="2">
-                    @(vid.Duration.Hours)h:@(vid.Duration.Minutes)m:@(vid.Duration.Seconds)s (@ByteToMegabyte(@vid.FileSize) MB)
-                </MudItem>
-                <MudItem xs="12">
-                    @foreach(var tag in vid.Tags)
-                    {
-                        <MudChip Color="Color.Default">@tag</MudChip>
-                    }
-                </MudItem>
-                <MudItem xs="6" md="4">
-                    <MudButton Variant="Variant.Outlined" OnClick="(() => LinkToClipboard(vid.Id))">Direktlink kopieren</MudButton>
-                </MudItem>
-                <MudItem xs="6" md="4">
-                    <MudButton Variant="Variant.Filled" OnClick="(() => EmbedToClipboard(vid))">Embedcode kopieren</MudButton>
-                </MudItem>
-                <MudItem xs="12" md="4">
-                    @if(@vid.Public) {
-                        <MudIconButton Icon="@Icons.Material.Filled.Public"></MudIconButton>
-                    } else {
-                        <MudIconButton Icon="@Icons.Material.Filled.PublicOff"></MudIconButton>
-                    }
-                    <MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Video?id={vid.Id}") Color="Color.Secondary"></MudIconButton>
-                    @if (vid.UserId.Equals(user?.Identity?.Name))
-                    {
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="(() => OpenEditDialog(vid))" Color="Color.Info"></MudIconButton>
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="(() => DeleteVideo(vid))" Color="Color.Warning"></MudIconButton>
-                    }
-                </MudItem>
-            </MudGrid>
-        </MudPaper>
-    }
-</MudExpansionPanels>
+
+@foreach(var vid in _videosFilteredByOwner)
+{
+    <MudPaper Class="pa-3 ma-3">
+        <MudGrid>
+            <MudItem xs="6" md="5">
+                @if(showSelector)
+                {
+                    <MudCheckBox T="bool" Checked="(IsSelected(vid))" CheckedChanged="(() => ToggleSelection(vid))"></MudCheckBox>
+                }
+                @vid.Titel (@vid.FileName)
+            </MudItem>
+            <MudItem xs="6" md="3">
+                @vid.UserId
+            </MudItem>
+            <MudItem xs="6" md="2">
+                @(vid.Width)x@(vid.Height)
+            </MudItem>
+            <MudItem xs="6" md="2">
+                @(vid.Duration.Hours)h:@(vid.Duration.Minutes)m:@(vid.Duration.Seconds)s (@ByteToMegabyte(@vid.FileSize) MB)
+            </MudItem>
+            <MudItem xs="12">
+                @foreach(var tag in vid.Tags)
+                {
+                    <MudChip Color="Color.Default">@tag</MudChip>
+                }
+            </MudItem>
+            <MudItem xs="6" md="4">
+                <MudButton Variant="Variant.Outlined" OnClick="(() => LinkToClipboard(vid.Id))">Direktlink kopieren</MudButton>
+            </MudItem>
+            <MudItem xs="6" md="4">
+                <MudButton Variant="Variant.Filled" OnClick="(() => EmbedToClipboard(vid))">Embedcode kopieren</MudButton>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                @if(@vid.Public) {
+                    <MudIconButton Icon="@Icons.Material.Filled.Public"></MudIconButton>
+                } else {
+                    <MudIconButton Icon="@Icons.Material.Filled.PublicOff"></MudIconButton>
+                }
+                <MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Video?id={vid.Id}") Color="Color.Secondary"></MudIconButton>
+                @if (vid.UserId.Equals(user?.Identity?.Name))
+                {
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="(() => OpenEditDialog(vid))" Color="Color.Info"></MudIconButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="(() => DeleteVideo(vid))" Color="Color.Warning"></MudIconButton>
+                }
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+}
+
 
 
 
@@ -105,7 +106,7 @@
     private List<string> list = new();
     private MudAutocomplete<string>? autocomplete;
     private bool showOnlyOwnVideos = true;
-    private List<Guid> selectedIds = new();
+    private List<Video> selectedIds = new();
 
     private ImmutableList<Video> _videos = ImmutableList<Video>.Empty;
     private ImmutableList<Video> _videosFiltered => (string.IsNullOrWhiteSpace(value)) ? _videos : ImmutableList<Video>.Empty.AddRange(_videos.Where(v => v.FileName.Contains(value, StringComparison.InvariantCultureIgnoreCase) || v.Tags.Contains<string>(value, comparer)));
@@ -142,15 +143,15 @@
 
     private void ToggleSelection(Video vid)
     {
-        if(selectedIds.Contains(vid.Id))
+        if(selectedIds.Contains(vid))
         {
-            selectedIds.Remove(vid.Id);
+            selectedIds.Remove(vid);
         } else
         {
-            selectedIds.Add(vid.Id);
+            selectedIds.Add(vid);
         }
     }
-    private bool IsSelected(Video vid) => selectedIds.Contains(vid.Id);
+    private bool IsSelected(Video vid) => selectedIds.Contains(vid);
 
     private async Task LinkToClipboard(Guid id)
     {
@@ -172,24 +173,60 @@
 
     private async Task OpenEditDialog(Video video)
     {
-        var parameters = new DialogParameters { ["video"] = video };
-        var dialog = DialogService.Show<EditVideoDialog>("Video editieren", parameters);
+        var options = new DialogOptions
+            {
+                MaxWidth = MaxWidth.Large,
+                FullWidth = true,
+                DisableBackdropClick = true
+            };
+        var parameters = new DialogParameters { ["thisVideo"] = video };
+        var dialog = DialogService.Show<VideoDialog>("Informationen zum Video", parameters, options);
         var result = await dialog.Result;
 
         if(!result.Cancelled)
         {
-            
+            var content = (Video)result.Data;
+            foreach(string videotag in content.Tags)
+            {
+                int index = DataRepository.Tags.FindIndex(t => t.Name.Equals(videotag));
+                if(index < 0)
+                {
+                    var tag = new Tag
+                        {
+                            IsPrivate = true,
+                            Name = videotag,
+                            UserId = user?.Identity?.Name ?? string.Empty
+                        };
+                    DataRepository.Tags.Add(tag);
+                    var coll = MongoConnection.GetTagCollection();
+                    await coll.InsertOneAsync(tag);
+                }
+            }
+            Put(new Actions.UpdateVideo.Request(content));
         }
     }
 
     private async Task OpenCreateSeriesDialog()
     {
-        var dialog = DialogService.Show<CreateSeriesDialog>("Neue Serie erstellen");
+        var vids = new ComparableList<Video>();
+        vids.AddRange(selectedIds);
+        //var vids = ImmutableList<Video>.Empty.AddRange(selectedIds);
+        var series = new Series
+        {
+            Videos = vids
+        };
+
+        var parameters = new DialogParameters { ["Series"] = series };
+        var dialog = DialogService.Show<CreateSeriesDialog>("Neue Serie erstellen", parameters);
+
         var result = await dialog.Result;
 
         if(!result.Cancelled)
         {
-            
+            var content = (Series)result.Data;
+            Put(new Actions.AddSeries.Request(content));
+            selectedIds = new();
+            StateHasChanged();
         }
     }
 

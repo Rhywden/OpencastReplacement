@@ -1,0 +1,140 @@
+﻿@using OpencastReplacement.Data
+@using OpencastReplacement.Helpers
+@using OpencastReplacement.Models
+@using System.Security.Claims
+@inject IDataRepository DataRepository
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h2">Informationen zum Video</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Color="Color.Error" Typo="Typo.h3" >@error</MudText>
+            </MudItem>
+            <MudItem xs="12">
+                <MudText>Bitte mindestens 2 und bis zu 5 Tags hinzufügen</MudText>
+            </MudItem>
+            <MudItem xs="9">
+                <MudAutocomplete T="string" @bind-Value="value" Label="Tags" CoerceValue="true" SearchFunc="Search" />
+            </MudItem>
+            <MudItem xs="2">
+                <MudButton OnClick="AddTag">Hinzufügen</MudButton>
+            </MudItem>
+            <MudItem xs="1"></MudItem>
+            <MudItem xs="12">
+                @foreach(var tag in selectedTags)
+                {
+                    <MudChip Color="Color.Default" OnClose="@(() => RemoveTag(tag))">@tag</MudChip>
+                }
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField T="string" Label="Titel" @bind-Value="title" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField T="string" Label="Beschreibung" Lines="3" @bind-Value="description" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Save" Color="Color.Primary">Erstellen</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance? MudDialog { get; set; }
+    [Parameter] public Video thisVideo { get; set; }
+
+    private ClaimsPrincipal? user;
+
+    private List<string> tags = new();
+    private List<string> selectedTags = new();
+    private string? value;
+
+    private string? title;
+    private string? description;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        foreach(var tag in DataRepository.Tags)
+        {
+            if (!tag.IsPrivate || tag.UserId.Equals(user?.Identity?.Name))
+            {
+                tags.Add(tag.Name);
+            }
+        }
+        foreach(var tag in thisVideo.Tags)
+        {
+            selectedTags.Add(tag);
+        }
+        title = thisVideo.Titel;
+        description = thisVideo.Beschreibung;
+    }
+
+    private async Task<IEnumerable<string>> Search(string val)
+    {
+        if(string.IsNullOrWhiteSpace(val))
+        {
+            return tags;
+        }
+        return tags.Where(x => x.Contains(val, StringComparison.InvariantCultureIgnoreCase));
+    }
+
+    private void AddTag()
+    {
+        if(!string.IsNullOrWhiteSpace(value) && selectedTags.Count < 5 && !selectedTags.Contains(value))
+        {
+            selectedTags.Add(value);
+            value = null;
+            StateHasChanged();
+        }
+
+    }
+
+    private void RemoveTag(string tagName)
+    {
+        selectedTags.Remove(tagName);
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+    }
+
+    private void Save()
+    {
+        bool missing = false;
+        if(selectedTags.Count <2 )
+        {
+            error = "Bitte mindestens 2 Tags eintragen";
+            missing = true;
+        }
+        if(string.IsNullOrWhiteSpace(title)) {
+            error = "Bitte einen Titel eintragen";
+            missing = true;
+        }
+        if(string.IsNullOrWhiteSpace(description))
+        {
+            error = "Bitte eine Beschreibung eingeben";
+            missing = true;
+        }
+        if(!missing)
+        {
+            var li = new ComparableList<string>();
+            li.AddRange(selectedTags);
+            var vid = thisVideo with
+            {
+                Beschreibung = description,
+                Titel = title,
+                Tags = li
+            };
+            MudDialog?.Close(DialogResult.Ok(vid));
+        }
+        
+    }
+}

@@ -9,16 +9,23 @@
         <MudText Typo="Typo.h6">Neue Serie erstellen</MudText>
     </TitleContent>
     <DialogContent>
-        
+        <ul>
+            @foreach(var vid in Series.Videos)
+            {
+                <li>@vid.Titel (@vid.FileName)</li>
+            }
+        </ul>
+        <MudTextField @bind-Value="name" Label="Name der Serie" />
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton OnClick="Save" Color="Color.Primary">Erstellen</MudButton>
+        <MudButton OnClick="Save" Color="Color.Primary" Disabled="(string.IsNullOrWhiteSpace(name))">Erstellen</MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] MudDialogInstance? MudDialog { get; set; }
+    [Parameter] public Series Series { get; set; }
 
     private ClaimsPrincipal? user;
 
@@ -36,7 +43,10 @@
 
     private void Save()
     {
-        //var res = new TagResult { Id = id, Tag = value ?? string.Empty };
-        //MudDialog?.Close(DialogResult.Ok(res));
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            var newSeries = Series with { Name = name, UserId = user?.Identity?.Name ?? string.Empty };
+            MudDialog?.Close(DialogResult.Ok(newSeries));
+        }
     }
 }

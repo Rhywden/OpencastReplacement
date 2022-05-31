@@ -9,5 +9,7 @@ namespace OpencastReplacement.Models
         public IBrowserFile File { get; init; } = default!;
         public bool IsPublic { get; init; } = true;
         public ComparableList<string> Tags { get; init; } = new();
+        public string? title { get; init; }
+        public string? description { get; init; }
     }
 }

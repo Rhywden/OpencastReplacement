@@ -26,7 +26,6 @@ namespace OpencastReplacement.Store
             var seriescollection = _connection.GetSeriesCollection();
             var seriesfilter = Builders<Models.Series>.Filter.Empty;
             var Series = await (await seriescollection.FindAsync(seriesfilter)).ToListAsync();
-            //TODO: Get stuff from DB and plonk it down here
             var store = new AppState
             {
                 Videos = ImmutableList<Video>.Empty.AddRange(Videos),

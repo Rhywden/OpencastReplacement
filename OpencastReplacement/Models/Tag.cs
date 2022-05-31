@@ -1,6 +1,6 @@
 ﻿namespace OpencastReplacement.Models
 {
-    public record Tag
+    public record Tag : IMongoEntry
     {
         public Guid Id { get; init; } = Guid.NewGuid();
         public string Name { get; init; } = default!;

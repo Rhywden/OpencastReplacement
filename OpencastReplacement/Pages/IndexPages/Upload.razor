@@ -60,7 +60,7 @@
                     <th>Größe (Byte)</th>
                     <th>Typ</th>
                     <th>Optionen</th>
-                    <th>Tags</th>
+                    <th>Tags &amp; Titel &amp; Beschreibung</th>
                     <th></th>
                 </tr>
             </thead>
@@ -81,7 +81,7 @@
                             <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => OpenAddTagDialog(file))" Size="Size.Small" />
                         </td>
                         <td>
-                            <MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="@(() => StartEncoding(file))" >Start</MudButton>
+                            <MudButton Disabled="@(IsNotConvertible(file))" Variant="Variant.Filled" Color="Color.Warning" OnClick="@(() => StartEncoding(file))" >Start</MudButton>
                         </td>
                     </tr>
                 }
@@ -146,35 +146,56 @@
         loadedFiles[index] = loadedFiles[index] with { IsPublic = !loadedFiles[index].IsPublic };
     }
 
+    private bool IsNotConvertible(UploadedFile file) => string.IsNullOrWhiteSpace(file.description) || string.IsNullOrWhiteSpace(file.title) || file.Tags.Count < 2;
+
     async Task OpenAddTagDialog(UploadedFile file)
     {
-        var parameters = new DialogParameters { ["id"] = file.Id };
-        var dialog = DialogService.Show<TagDialog>("Tag hinzufügen", parameters);
+        var video = new Video
+            {
+                FileName = file.File.Name,
+                Id = file.Id,
+                Public = file.IsPublic,
+                UserId = user?.Identity?.Name ?? string.Empty,
+                Beschreibung = file.description,
+                Titel = file.title,
+                Tags = file.Tags
+            };
+        var options = new DialogOptions
+            {
+                MaxWidth = MaxWidth.Large,
+                FullWidth = true,
+                DisableBackdropClick = true
+            };
+
+        var parameters = new DialogParameters { ["thisVideo"] = video };
+        var dialog = DialogService.Show<VideoDialog>("Informationen zum Video", parameters, options);
         var result = await dialog.Result;
 
         if(!result.Cancelled)
         {
-            var content = (TagResult)result.Data;
-            int index = DataRepository.Tags.FindIndex(t => t.Name.Equals(content.Tag));
-            if(index < 0)
+            var content = (Video)result.Data;
+            foreach(string videotag in content.Tags)
             {
-                var tag = new Tag
-                    {
-                        IsPrivate = true,
-                        Name = content.Tag,
-                        UserId = user?.Identity?.Name ?? string.Empty
-                    };
-                DataRepository.Tags.Add(tag);
-                var coll = MongoConnection.GetTagCollection();
-                await coll.InsertOneAsync(tag);
+                int index = DataRepository.Tags.FindIndex(t => t.Name.Equals(videotag));
+                if(index < 0)
+                {
+                    var tag = new Tag
+                        {
+                            IsPrivate = true,
+                            Name = videotag,
+                            UserId = user?.Identity?.Name ?? string.Empty
+                        };
+                    DataRepository.Tags.Add(tag);
+                    var coll = MongoConnection.GetTagCollection();
+                    await coll.InsertOneAsync(tag);
+                }
             }
+
             int fileIndex = loadedFiles.FindIndex(l => l.Id.Equals(content.Id));
-            if(fileIndex >= 0)
+             if(fileIndex >= 0)
             {
                 var fi = loadedFiles[fileIndex];
-                var tags = fi.Tags;
-                tags.Add(content.Tag);
-                loadedFiles[fileIndex] = fi with { Tags = tags };
+                loadedFiles[fileIndex] = fi with { Tags = content.Tags, description = content.Beschreibung, title = content.Titel };
             }
         }
     }
@@ -187,7 +208,9 @@
                 FileSize = file.File.Size,
                 Public = file.IsPublic,
                 Tags = file.Tags,
-                UserId = user?.Identity?.Name ?? string.Empty
+                UserId = user?.Identity?.Name ?? string.Empty,
+                Titel = file.title,
+                Beschreibung = file.description
             };
         var conversion = new Conversion
             {

@@ -1,6 +1,5 @@
 ﻿using MongoDB.Driver;
 using OpencastReplacement.Data;
-using OpencastReplacement.Events;
 using OpencastReplacement.Helpers;
 using OpencastReplacement.Models;
 using RudderSingleton;
@@ -8,28 +7,16 @@ using System.Collections.Immutable;
 
 namespace OpencastReplacement.Store
 {
-    public class VideoLogicFlow : ILogicFlow, IDisposable
+    public class VideoLogicFlow : ILogicFlow
     {
         private readonly Store<AppState> _store;
         private readonly IMongoConnection _connection;
         private readonly IWebHostEnvironment _hostingEnv;
-        private readonly VideoAddedEvent _videoAddedEvent;
-        public VideoLogicFlow(Store<AppState> store, IMongoConnection connection, IWebHostEnvironment env, VideoAddedEvent videoAddedEvent)
+        public VideoLogicFlow(Store<AppState> store, IMongoConnection connection, IWebHostEnvironment env)
         {
             _store = store;
             _connection = connection;
             _hostingEnv = env;
-            _videoAddedEvent = videoAddedEvent;
-            _videoAddedEvent.Notify += OnFileAdded;
-        }
-
-        private async Task OnFileAdded(Video? video)
-        {
-            if (video is not null)
-            {
-                _store.Put(new Actions.AddVideo.Request(videoToBeAdded: video));
-            }
-            await Task.CompletedTask;
         }
 
         public async Task OnNext(object action)
@@ -53,12 +40,12 @@ namespace OpencastReplacement.Store
 
         private async Task LoadVideos()
         {
-            _store.Put(new Actions.LoadVideos.Request());
-            var videocollection = _connection.GetVideoCollection();
-            var videofilter = Builders<Video>.Filter.Empty;
-            var Videos = await (await videocollection.FindAsync(videofilter)).ToListAsync();
             try
             {
+                _store.Put(new Actions.LoadVideos.Request());
+                var videocollection = _connection.GetVideoCollection();
+                var videofilter = Builders<Video>.Filter.Empty;
+                var Videos = await (await videocollection.FindAsync(videofilter)).ToListAsync();
                 var videos = ImmutableList<Video>.Empty.AddRange(Videos);
                 _store.Put(new Actions.VideoSuccess(videos: videos));
             } catch(Exception ex)
@@ -107,20 +94,13 @@ namespace OpencastReplacement.Store
                 var comparer = new MongoEntryComparer();
                 //TODO: See if that actually works
                 var videos = _store.State.Videos.Replace(video, video, comparer);
-
-                //Video oldvideo = _store.State.Videos.Find(v => v.Id == video.Id) ?? new();
-                //var videos = _store.State.Videos.Replace(oldvideo, video);
+                
                 _store.Put(new Actions.VideoSuccess(videos));
             }
             catch (Exception ex)
             {
                 _store.Put(new Actions.DeleteVideo.Error(message: ex.Message));
             }
-        }
-
-        public void Dispose()
-        {
-            _videoAddedEvent.Notify -= OnFileAdded;
         }
     }
 }

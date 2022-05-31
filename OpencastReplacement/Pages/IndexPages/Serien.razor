@@ -1,0 +1,89 @@
+﻿@page "/serien"
+@using OpencastReplacement.Models
+@using System.Collections.Immutable
+@using OpencastReplacement.Store
+@using RudderSingleton
+@using System.Security.Claims
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IWebHostEnvironment Environment
+@inject IDialogService DialogService
+@inject IJSRuntime JSRuntime
+
+@inherits StateComponent<AppState>
+
+<AuthorizeView Roles="admin,lehrer">
+    <Authorized>
+        @foreach(var eintrag in _meineSerien)
+        {
+            <MudPaper Class="pa-3 ma-3">
+                <MudGrid>
+                    <MudItem xs="6"><MudText Typo="Typo.h3">@eintrag.Name</MudText></MudItem>
+                    <MudItem xs="6">
+                        <MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Series?id={eintrag.Id}")></MudIconButton>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="(() => Delete(eintrag))" Color="Color.Warning"></MudIconButton>
+                        <MudButton Variant="Variant.Outlined" OnClick="(() => LinkToClipboard(eintrag.Id))">Direktlink kopieren</MudButton>
+                        <MudButton Variant="Variant.Filled" OnClick="(() => EmbedToClipboard(eintrag))">Embedcode kopieren</MudButton>
+                    </MudItem>
+                    <MudItem xs="12">
+                        @foreach(var vid in eintrag.Videos)
+                        {
+                            <MudText>@vid.Titel (@vid.FileName)</MudText>
+                        }
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        }
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    private ImmutableList<Series> _serien = ImmutableList<Series>.Empty;
+    private ImmutableList<Series> _meineSerien => _serien.Where(s => s.UserId.Equals(user?.Identity?.Name)).ToImmutableList();
+    private ClaimsPrincipal? user;
+    private string baseUrl => Environment.IsDevelopment() ? "https://localhost:7043" : "https://video.bs18.de";
+    protected override async Task OnInitializedAsync()
+    {
+        user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        UseState(state => _serien = state.Series);
+    }
+
+    private async void Delete(Series series)
+    {
+        bool? result = await DialogService.ShowMessageBox("Warnung", "Diese Serie wird permanent gelöscht!", yesText: "Löschen!", noText: null, cancelText: "Abbrechen");
+        if(result == true)
+        {
+            Put(new Actions.DeleteSeries.Request(series));
+            StateHasChanged();
+        }
+    }
+
+    private async Task LinkToClipboard(Guid id)
+    {
+        string link = $"{baseUrl}/Series?id={id}";
+        await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", link);
+        //Snackbar.Add("Id in die Zwischenablage kopiert!");
+    }
+
+    private async Task EmbedToClipboard(Series series)
+    {
+        int newHeight = series.Videos[0].Height + 200;
+        int newWidth = series.Videos[0].Width;
+
+        if(newHeight > 500)
+        {
+            double factor = 500.0 / (double)newHeight;
+            newHeight = 500;
+            newWidth = (int)(newWidth * factor);
+        }
+        if(newWidth > 600)
+        {
+            double factor = 600.0 / (double)newWidth;
+            newWidth = 600;
+            newHeight = (int)(newHeight * factor);
+        }
+
+        string embed = $"<iframe src=\"{baseUrl}/Series?id={series.Id}\" title=\"{series.Name}\" style=\"width:{newWidth}px;height:{newHeight}px\" frameborder=\"0\" scrolling=\"no\" allowfullscreen></iframe>";
+        await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", embed);
+    }
+}
