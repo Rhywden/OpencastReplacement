@@ -6,13 +6,15 @@ namespace OpencastReplacement.Helpers
     {
         public bool Equals(string? x, string? y)
         {
-            if(x is null && y is null)
+            if (x is null && y is null)
             {
                 return true;
-            } else if(x is null || y is null)
+            }
+            else if (x is null || y is null)
             {
                 return false;
-            } else
+            }
+            else
             {
                 return x.Equals(y, StringComparison.InvariantCultureIgnoreCase);
             }

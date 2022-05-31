@@ -2,8 +2,12 @@
 @using OpencastReplacement.Helpers
 @using OpencastReplacement.Models
 @using System.Security.Claims
-@inject IDataRepository DataRepository
+@using System.Collections.Immutable
+@using OpencastReplacement.Store
+@using RudderSingleton
 @inject AuthenticationStateProvider AuthenticationStateProvider
+
+@inherits StateComponent<AppState>
 
 <MudDialog>
     <TitleContent>
@@ -50,6 +54,7 @@
 
     private ClaimsPrincipal? user;
 
+    private ImmutableList<Tag> _tags = ImmutableList<Tag>.Empty;
     private List<string> tags = new();
     private List<string> selectedTags = new();
     private string? value;
@@ -58,10 +63,13 @@
     private string? description;
     private string? error;
 
+    
+
     protected override async Task OnInitializedAsync()
     {
         user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
-        foreach(var tag in DataRepository.Tags)
+        UseState(state => _tags = state.Tags);
+        foreach(var tag in _tags)
         {
             if (!tag.IsPrivate || tag.UserId.Equals(user?.Identity?.Name))
             {
@@ -125,8 +133,7 @@
         }
         if(!missing)
         {
-            var li = new ComparableList<string>();
-            li.AddRange(selectedTags);
+            var li = ImmutableList<string>.Empty.AddRange(selectedTags);
             var vid = thisVideo with
             {
                 Beschreibung = description,

@@ -1,20 +1,15 @@
 ﻿@using OpencastReplacement.Data
 @using System.Security.Claims
-@using OpencastReplacement.Events
 @using OpencastReplacement.Helpers
 @using OpencastReplacement.Models
 @using OpencastReplacement.Store
 @using RudderSingleton
 @using System.Collections.Immutable
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject IDataRepository DataRepository
-@inject VideoAddedEvent VideoAddedEvent
 @inject IJSRuntime JSRuntime
 @inject IWebHostEnvironment Environment
 @inject IDialogService DialogService
 @inject IMongoConnection MongoConnection
-
-@implements IDisposable
 
 @inherits StateComponent<AppState>
 
@@ -109,8 +104,10 @@
     private List<Video> selectedIds = new();
 
     private ImmutableList<Video> _videos = ImmutableList<Video>.Empty;
-    private ImmutableList<Video> _videosFiltered => (string.IsNullOrWhiteSpace(value)) ? _videos : ImmutableList<Video>.Empty.AddRange(_videos.Where(v => v.FileName.Contains(value, StringComparison.InvariantCultureIgnoreCase) || v.Tags.Contains<string>(value, comparer)));
+    private ImmutableList<Video> _videosFiltered => (string.IsNullOrWhiteSpace(value)) ? _videos : ImmutableList<Video>.Empty.AddRange(_videos.Where(v => v.FileName.Contains(value, StringComparison.InvariantCultureIgnoreCase) || v.Tags.Contains(value, (IEqualityComparer<string>)comparer)));
     private ImmutableList<Video> _videosFilteredByOwner => showOnlyOwnVideos ? ImmutableList<Video>.Empty.AddRange(_videosFiltered.Where(v => v.UserId.Equals(user?.Identity?.Name))) : _videosFiltered;
+
+    private ImmutableList<Tag> _tags = ImmutableList<Tag>.Empty;
 
     private bool showSelector = false;
 
@@ -122,6 +119,7 @@
     {
         user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
         UseState(state => _videos = state.Videos);
+        UseState(state => _tags = state.Tags);
     }
 
     private string IdToKeyVideoList(Guid id)
@@ -166,7 +164,6 @@
         if(result == true)
         {
             Put(new Actions.DeleteVideo.Request(video));
-            //DataRepository.DeleteVideo(video);
             StateHasChanged();
         }
     }
@@ -188,7 +185,7 @@
             var content = (Video)result.Data;
             foreach(string videotag in content.Tags)
             {
-                int index = DataRepository.Tags.FindIndex(t => t.Name.Equals(videotag));
+                int index = _tags.FindIndex(t => t.Name.Equals(videotag));
                 if(index < 0)
                 {
                     var tag = new Tag
@@ -197,9 +194,7 @@
                             Name = videotag,
                             UserId = user?.Identity?.Name ?? string.Empty
                         };
-                    DataRepository.Tags.Add(tag);
-                    var coll = MongoConnection.GetTagCollection();
-                    await coll.InsertOneAsync(tag);
+                    Put(new Actions.AddTag.Request(tag));
                 }
             }
             Put(new Actions.UpdateVideo.Request(content));
@@ -208,9 +203,7 @@
 
     private async Task OpenCreateSeriesDialog()
     {
-        var vids = new ComparableList<Video>();
-        vids.AddRange(selectedIds);
-        //var vids = ImmutableList<Video>.Empty.AddRange(selectedIds);
+        var vids = ImmutableList<Video>.Empty.AddRange(this.selectedIds);
         var series = new Series
         {
             Videos = vids

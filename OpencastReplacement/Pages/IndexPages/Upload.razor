@@ -2,21 +2,21 @@
 
 @using Microsoft.Extensions.Logging
 @using OpencastReplacement.Data
-@using OpencastReplacement.Events
 @using OpencastReplacement.Models
 @using OpencastReplacement.Services
 @using System.Security.Claims
+@using OpencastReplacement.Store
+@using RudderSingleton
+@using System.Collections.Immutable
 
 @inject ILogger<Upload> Logger
 @inject IWebHostEnvironment Environment
 @inject FileQueueMonitor FileQueueMonitor
-@inject ConversionProgressEvent ConversionProgressEvent
-@inject IDataRepository DataRepository
 @inject IDialogService DialogService
 @inject IMongoConnection MongoConnection
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
-@implements IDisposable
+@inherits StateComponent<AppState>
 
 <AuthorizeView Roles="admin,lehrer">
     <Authorized>
@@ -100,7 +100,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach(var conv in DataRepository.Conversions)
+                @foreach(var conv in _conversions)
                 {
                     <tr @key="IdToKeyConversions(conv.ConversionId)">
                         <td>@conv.Filename</td>
@@ -128,6 +128,9 @@
     private int maxAllowedFiles = 3;
     private bool isLoading;
     private int progressInt;
+
+    private ImmutableList<Conversion> _conversions = ImmutableList<Conversion>.Empty;
+    private ImmutableList<Tag> _tags = ImmutableList<Tag>.Empty;
 
     private ClaimsPrincipal? user;
 
@@ -176,7 +179,7 @@
             var content = (Video)result.Data;
             foreach(string videotag in content.Tags)
             {
-                int index = DataRepository.Tags.FindIndex(t => t.Name.Equals(videotag));
+                int index = _tags.FindIndex(t => t.Name.Equals(videotag) && t.UserId.Equals(user?.Identity?.Name));
                 if(index < 0)
                 {
                     var tag = new Tag
@@ -185,14 +188,12 @@
                             Name = videotag,
                             UserId = user?.Identity?.Name ?? string.Empty
                         };
-                    DataRepository.Tags.Add(tag);
-                    var coll = MongoConnection.GetTagCollection();
-                    await coll.InsertOneAsync(tag);
+                    Put(new Actions.AddTag.Request(tag));
                 }
             }
 
             int fileIndex = loadedFiles.FindIndex(l => l.Id.Equals(content.Id));
-             if(fileIndex >= 0)
+            if(fileIndex >= 0)
             {
                 var fi = loadedFiles[fileIndex];
                 loadedFiles[fileIndex] = fi with { Tags = content.Tags, description = content.Beschreibung, title = content.Titel };
@@ -219,7 +220,7 @@
                 HasStarted = false,
                 VideoId = video.Id
             };
-        DataRepository.Conversions.Add(conversion);
+        Put(new Actions.AddConversion.Request(conversion));
         await FileQueueMonitor.QueueFileForEncoding(video);
         int index = loadedFiles.FindIndex(l => l.Id.Equals(file.Id));
         if(index >= 0)
@@ -238,8 +239,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ConversionProgressEvent.Notify += OnProgressReport;
         user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+        UseState(state => _conversions = state.Conversions);
+        UseState(state => _tags = state.Tags);
     }
 
     private async Task LoadFiles(InputFileChangeEventArgs e)
@@ -295,19 +297,5 @@
         }
 
         isLoading = false;
-    }
-
-    public async Task OnProgressReport(ConversionProgressEventArgs args)
-    {
-        await InvokeAsync(() =>
-        {
-            conversionProgress = args.Progress;
-            StateHasChanged();
-        });
-    }
-
-    public void Dispose()
-    {
-        ConversionProgressEvent.Notify -= OnProgressReport;   
     }
 }

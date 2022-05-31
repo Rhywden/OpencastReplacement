@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components.Forms;
-using OpencastReplacement.Helpers;
+using System.Collections.Immutable;
 
 namespace OpencastReplacement.Models
 {
@@ -8,7 +8,7 @@ namespace OpencastReplacement.Models
         public Guid Id { get; init; } = Guid.NewGuid();
         public IBrowserFile File { get; init; } = default!;
         public bool IsPublic { get; init; } = true;
-        public ComparableList<string> Tags { get; init; } = new();
+        public ImmutableList<string> Tags { get; init; } = ImmutableList<string>.Empty;
         public string? title { get; init; }
         public string? description { get; init; }
     }

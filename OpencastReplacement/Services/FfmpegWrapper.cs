@@ -1,7 +1,6 @@
 ﻿using FFMpegCore;
 using FFMpegCore.Enums;
 using OpencastReplacement.Data;
-using OpencastReplacement.Events;
 using OpencastReplacement.Models;
 using OpencastReplacement.Store;
 using RudderSingleton;
@@ -13,28 +12,19 @@ namespace OpencastReplacement.Services
         private IWebHostEnvironment hostingEnv;
         private ILogger<FfmpegWrapper> logger;
         private ConfigurationManager configurationManager;
-        private ConversionProgressEvent conversionProgressEvent;
-        private VideoAddedEvent videoAddedEvent;
-        private IDataRepository repository;
         private IMongoConnection _connection;
         private readonly Store<AppState> _store;
 
         public FfmpegWrapper(IWebHostEnvironment env,
             ILogger<FfmpegWrapper> log, 
             ConfigurationWrapper conf, 
-            ConversionProgressEvent evt,
-            VideoAddedEvent _videoAddedEvent,
-            IDataRepository repo, 
             IMongoConnection connection,
             Store<AppState> store)
         {
             hostingEnv = env;
             logger = log;
             configurationManager = conf.ConfigurationManager;
-            conversionProgressEvent = evt;
-            repository = repo;
             _connection = connection;
-            videoAddedEvent = _videoAddedEvent;
             _store = store;
         }
         public Task<bool> CancelEncoding(string id)
@@ -44,22 +34,22 @@ namespace OpencastReplacement.Services
 
         public async Task<bool> StartEncoding(Video video)
         {
-            var evtArgs = new ConversionProgressEventArgs
+            var conversion = new Conversion
             {
-                Progress = 0
+                Filename = video.Public ? video.FileName : "Nicht öffentlich",
+                Progress = 0,
+                HasStarted = false,
+                VideoId = video.Id
             };
-            Action<double> progressHandler = new Action<double>(async p =>
+            _store.Put(new Actions.UpdateConversion.Request(conversion));
+            Action<double> progressHandler = new Action<double>(p =>
             {
-                evtArgs.Progress = p;
-                await conversionProgressEvent.Update(evtArgs);
-
-                var index = repository.Conversions.FindIndex(c => c.VideoId.Equals(video.Id));
-                if (index >= 0)
+                var convProgress = conversion with
                 {
-                    var newConv = repository.Conversions[index] with { HasStarted = true, Progress = p };
-                    repository.Conversions[index] = newConv;
-                }
-
+                    HasStarted = true,
+                    Progress = p
+                };                
+                _store.Put(new Actions.UpdateConversion.Request(convProgress));
                 logger.LogInformation($"Progress on encode: {p}");
             });
 
@@ -82,9 +72,8 @@ namespace OpencastReplacement.Services
                     .NotifyOnProgress(progressHandler, media.Duration)
                     .ProcessAsynchronously();
                 File.Delete(input);
-                var index = repository.Conversions.FindIndex(c => c.VideoId.Equals(video.Id));
-                repository.Conversions.RemoveAt(index);
-                await conversionProgressEvent.Update(evtArgs);
+                _store.Put(new Actions.DeleteConversion.Request(conversion));
+
                 var vid = video with
                 {
                     Duration = media.Duration,
@@ -92,7 +81,6 @@ namespace OpencastReplacement.Services
                     Width = media.PrimaryVideoStream!.Width,
                 };
                 _store.Put(new Actions.AddVideo.Request(videoToBeAdded: vid));
-                //await videoAddedEvent.Update(video: vid);
             } catch (Exception e) {
                 logger.LogCritical($"FFMpeg threw error: {e.InnerException}");
             }

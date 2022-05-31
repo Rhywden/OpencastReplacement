@@ -27,7 +27,7 @@ namespace OpencastReplacement.Store
             Actions.UpdateTag.Error action => state with { ErrorMessage = action.message },
             Actions.DeleteTag.Error action => state with { ErrorMessage = action.message },
 
-            Actions.ConcersionSuccess action => state with { Conversions = action.conversions },
+            Actions.ConversionSuccess action => state with { Conversions = action.conversions },
             Actions.AddConversion.Error action => state with { ErrorMessage = action.message },
             Actions.UpdateConversion.Error action => state with { ErrorMessage = action.message },
             Actions.DeleteConversion.Error action => state with { ErrorMessage = action.message },

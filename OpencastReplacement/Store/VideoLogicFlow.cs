@@ -1,9 +1,7 @@
 ﻿using MongoDB.Driver;
 using OpencastReplacement.Data;
-using OpencastReplacement.Helpers;
 using OpencastReplacement.Models;
 using RudderSingleton;
-using System.Collections.Immutable;
 
 namespace OpencastReplacement.Store
 {
@@ -46,7 +44,7 @@ namespace OpencastReplacement.Store
                 var videocollection = _connection.GetVideoCollection();
                 var videofilter = Builders<Video>.Filter.Empty;
                 var Videos = await (await videocollection.FindAsync(videofilter)).ToListAsync();
-                var videos = ImmutableList<Video>.Empty.AddRange(Videos);
+                var videos = System.Collections.Immutable.ImmutableList<Video>.Empty.AddRange(Videos);
                 _store.Put(new Actions.VideoSuccess(videos: videos));
             } catch(Exception ex)
             {
@@ -91,11 +89,13 @@ namespace OpencastReplacement.Store
                 var coll = _connection.GetVideoCollection();
                 var filter = Builders<Video>.Filter.Eq("_id", video.Id);
                 await coll.ReplaceOneAsync(filter, video);
-                var comparer = new MongoEntryComparer();
-                //TODO: See if that actually works
-                var videos = _store.State.Videos.Replace(video, video, comparer);
-                
-                _store.Put(new Actions.VideoSuccess(videos));
+
+                int index = _store.State.Videos.FindIndex(vi => vi.Id.Equals(video.Id));
+                if(index != -1)
+                {
+                    var videos = _store.State.Videos.SetItem(index, video);
+                    _store.Put(new Actions.VideoSuccess(videos));
+                } 
             }
             catch (Exception ex)
             {

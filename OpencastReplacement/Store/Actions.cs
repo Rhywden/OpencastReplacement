@@ -69,7 +69,7 @@ namespace OpencastReplacement.Store
             public record Error(string message);
         }
 
-        public record ConcersionSuccess(ImmutableList<Conversion> conversions);
+        public record ConversionSuccess(ImmutableList<Conversion> conversions);
         public record AddConversion
         {
             public record Request(Conversion conversionToBeAdded);

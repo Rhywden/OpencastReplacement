@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using OpencastReplacement.Helpers;
+using System.Collections.Immutable;
 
 namespace OpencastReplacement.Models
 {
@@ -14,7 +15,8 @@ namespace OpencastReplacement.Models
         public string? Poster { get; init; }
         public Guid? SerienId { get; init; }
         public long FileSize { get; init; } = default!;
-        public ComparableList<string> Tags { get; init; } = new();
+        [BsonSerializer(typeof(ImmutableListSerializer<string>))]
+        public System.Collections.Immutable.ImmutableList<string> Tags { get; init; } = System.Collections.Immutable.ImmutableList<string>.Empty;
         public bool Public { get; init; } = true;
         public bool Is480p { get; init; } = default!;
         public bool Is720p { get; init; } = default!;

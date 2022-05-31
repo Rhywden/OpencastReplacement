@@ -12,9 +12,7 @@ namespace OpencastReplacement.Models
 
         public string UserId { get; init; } = default!;
 
-        //[BsonSerializer(typeof(ImmutableListSerializer))]
-        //public ImmutableList<Video> Videos { get; init; } = ImmutableList<Video>.Empty;
-
-        public ComparableList<Video> Videos { get; init; } = new();
+        [BsonSerializer(typeof(ImmutableListSerializer<Video>))]
+        public ImmutableList<Video> Videos { get; init; } = ImmutableList<Video>.Empty;
     }
 }

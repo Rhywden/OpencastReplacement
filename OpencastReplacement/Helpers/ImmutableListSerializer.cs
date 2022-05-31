@@ -1,37 +1,71 @@
 ﻿using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
-using OpencastReplacement.Models;
 using System.Collections.Immutable;
 
 namespace OpencastReplacement.Helpers
 {
-    public class ImmutableListSerializer : SerializerBase<ImmutableList<Video>>
+    /// <summary>
+    /// Represents a serializer for readonly collection.
+    /// </summary>
+    /// <typeparam name="TItem">The type of the item.</typeparam>
+    public class ImmutableListSerializer<TItem> :
+        EnumerableInterfaceImplementerSerializerBase<System.Collections.Immutable.ImmutableList<TItem>, TItem>
     {
-        public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, ImmutableList<Video> value)
+        // constructors
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableListSerializer{TItem}"/> class.
+        /// </summary>
+        public ImmutableListSerializer()
         {
-            base.Serialize(context, args, value);
         }
 
-        public override ImmutableList<Video> Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableListSerializer{TItem}"/> class.
+        /// </summary>
+        /// <param name="itemSerializer">The item serializer.</param>
+        public ImmutableListSerializer(IBsonSerializer<TItem> itemSerializer)
+            : base(itemSerializer)
         {
-            context.Reader.ReadStartArray();
+        }
 
-            ImmutableList<Video> Videos = ImmutableList<Video>.Empty;
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ImmutableListSerializer{TItem}" /> class.
+        /// </summary>
+        /// <param name="serializerRegistry">The serializer registry.</param>
+        public ImmutableListSerializer(IBsonSerializerRegistry serializerRegistry)
+            : base(serializerRegistry)
+        {
+        }
 
-            while(context.Reader.State != MongoDB.Bson.IO.BsonReaderState.EndOfArray)
-            {
-                context.Reader.ReadStartDocument();
+        // public methods
+        /// <summary>
+        /// Returns a serializer that has been reconfigured with the specified item serializer.
+        /// </summary>
+        /// <param name="itemSerializer">The item serializer.</param>
+        /// <returns>The reconfigured serializer.</returns>
+        public ImmutableListSerializer<TItem> WithItemSerializer(IBsonSerializer<TItem> itemSerializer)
+        {
+            return new ImmutableListSerializer<TItem>(itemSerializer);
+        }
 
-                var _id = context.Reader.ReadString();
-                //TODO: Rest
+        // protected methods
+        /// <summary>
+        /// Creates the accumulator.
+        /// </summary>
+        /// <returns>The accumulator.</returns>
+        protected override object CreateAccumulator()
+        {
+            return new List<TItem>();
+        }
 
-                context.Reader.ReadEndDocument();
-                context.Reader.ReadBsonType();
-            }
-            context.Reader.ReadEndArray();
-
-            return Videos;
-
+        /// <summary>
+        /// Finalizes the result.
+        /// </summary>
+        /// <param name="accumulator">The accumulator.</param>
+        /// <returns>The final result.</returns>
+        protected override System.Collections.Immutable.ImmutableList<TItem> FinalizeResult(object accumulator)
+        {
+            return ((List<TItem>)accumulator).ToImmutableList();
         }
     }
 }

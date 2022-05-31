@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Microsoft.IdentityModel.Tokens;
-using OpencastReplacement.Events;
 using RudderSingleton;
 using OpencastReplacement.Store;
 
@@ -39,16 +38,13 @@ builder.Services.AddServerSideBlazor().AddMicrosoftIdentityConsentHandler();
 
 builder.Services.AddSingleton<IFfmpegWrapper, FfmpegWrapper>();
 builder.Services.AddSingleton<IMongoConnection>(mc => new MongoConnection(Configuration["mongodb:connection"], Environment));
-builder.Services.AddSingleton<ConfigurationWrapper>(cm => new ConfigurationWrapper(Configuration));
+builder.Services.AddSingleton(cm => new ConfigurationWrapper(Configuration));
 builder.Services.AddHostedService<QueuedHostedService>();
-builder.Services.AddSingleton<ConversionProgressEvent>();
-builder.Services.AddSingleton<VideoAddedEvent>();
 builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx =>
 {
     return new BackgroundTaskQueue(100);
 });
 builder.Services.AddSingleton<FileQueueMonitor>();
-builder.Services.AddSingleton<IDataRepository, DataRepository>();
 
 builder.Services.AddMudServices();
 builder.Services.AddRudder<AppState>(options =>
@@ -77,7 +73,6 @@ builder.Services.AddAuthentication(options =>
     options.Scope.Add("openid");
     options.Scope.Add("profile");
     options.Scope.Add("email");
-    //options.Scope.Add("roles");
     options.Scope.Add("offline_access");
     options.ClaimActions.Add(new JsonKeyClaimAction("role", string.Empty, "role"));
     options.SaveTokens = true;
@@ -130,13 +125,5 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
-
-
-//Initial data loading
-Task.Factory.StartNew(async () =>
-{
-    var data = app.Services.GetService<IDataRepository>();
-    await data!.Init();
-});
 
 app.Run();
