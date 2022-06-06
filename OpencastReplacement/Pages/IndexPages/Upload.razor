@@ -253,8 +253,10 @@
         {
             try
             {
+                var invalids = System.IO.Path.GetInvalidFileNameChars();
+                var newName = String.Join("_", file.Name.Split(invalids, StringSplitOptions.RemoveEmptyEntries) ).TrimEnd('.');
                 var path = Path.Combine(Environment.ContentRootPath,
-                   "wwwroot","temp", file.Name);
+                   "wwwroot","temp", newName);
 
                 await using FileStream writeStream = new(path, FileMode.Create);
                 using var readStream = file.OpenReadStream(maxFileSize);

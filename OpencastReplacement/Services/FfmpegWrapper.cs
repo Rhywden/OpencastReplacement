@@ -34,11 +34,19 @@ namespace OpencastReplacement.Services
 
         public async Task<bool> StartEncoding(Video video)
         {
+            GlobalFFOptions.Configure(new FFOptions { BinaryFolder = configurationManager["ffmpeg:exepath"] });
+            string input = Path.Combine(hostingEnv.ContentRootPath,
+                        "wwwroot", "temp", video.FileName);
+            string output = Path.Combine(hostingEnv.ContentRootPath,
+                        "wwwroot", "uploads", video.FileName);
+
+            var media = await FFProbe.AnalyseAsync(input);
+
             var conversion = new Conversion
             {
                 Filename = video.Public ? video.FileName : "Nicht öffentlich",
                 Progress = 0,
-                HasStarted = false,
+                HasStarted = true,
                 VideoId = video.Id
             };
             _store.Put(new Actions.UpdateConversion.Request(conversion));
@@ -52,14 +60,33 @@ namespace OpencastReplacement.Services
                 _store.Put(new Actions.UpdateConversion.Request(convProgress));
                 logger.LogInformation($"Progress on encode: {p}");
             });
+            Action<string> errorHandler = new Action<string>(p =>
+            {
+                string[] ary = p.Split(' ');
+                string[]? pAry = null;
+                for(int i = 0; i < ary.Length; i++)
+                {
+                    if (ary[i] != string.Empty)
+                    {
+                        pAry = ary[i].Split('=');
+                        if (pAry[0].Equals("time"))
+                        {
+                            TimeSpan timeComplete = TimeSpan.Parse(pAry[1]);
+                            TimeSpan timeLeft = media.Duration - timeComplete;
+                            double secondsLeft = timeLeft.TotalSeconds;
+                            double percentage =  Math.Round(100 - (secondsLeft * 100 / media.Duration.TotalSeconds),1);
 
-            GlobalFFOptions.Configure(new FFOptions { BinaryFolder = configurationManager["ffmpeg:exepath"] });
-            string input = Path.Combine(hostingEnv.ContentRootPath,
-                        "wwwroot", "temp", video.FileName);
-            string output = Path.Combine(hostingEnv.ContentRootPath,
-                        "wwwroot", "uploads", video.FileName);
-
-            var media = await FFProbe.AnalyseAsync(input);
+                            var convProgress = conversion with
+                            {
+                                HasStarted = true,
+                                Progress = percentage
+                            };
+                            _store.Put(new Actions.UpdateConversion.Request(convProgress));
+                            logger.LogInformation($"Progress on encode: {p}");
+                        }
+                    }
+                }
+            });
 
             try {
                 var result = await FFMpegArguments
@@ -70,9 +97,12 @@ namespace OpencastReplacement.Services
                         .WithAudioCodec(AudioCodec.Aac)
                         .WithFastStart())
                     .NotifyOnProgress(progressHandler, media.Duration)
+                    .NotifyOnError(errorHandler)
                     .ProcessAsynchronously();
                 File.Delete(input);
                 _store.Put(new Actions.DeleteConversion.Request(conversion));
+
+                
 
                 var vid = video with
                 {
