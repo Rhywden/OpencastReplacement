@@ -8,6 +8,7 @@
 @using OpencastReplacement.Store
 @using RudderSingleton
 @using System.Collections.Immutable
+@using System.Text.RegularExpressions
 
 @inject ILogger<Upload> Logger
 @inject IWebHostEnvironment Environment
@@ -205,7 +206,7 @@
     {
         var video = new Video
             {
-                FileName = file.File.Name,
+                FileName = file.SanitizedFilename,
                 FileSize = file.File.Size,
                 Public = file.IsPublic,
                 Tags = file.Tags,
@@ -215,7 +216,7 @@
             };
         var conversion = new Conversion
             {
-                Filename = file.IsPublic ? file.File.Name : "Nicht öffentlich",
+                Filename = file.IsPublic ? file.SanitizedFilename : "Nicht öffentlich",
                 Progress = 0,
                 HasStarted = false,
                 VideoId = video.Id
@@ -253,10 +254,21 @@
         {
             try
             {
-                var invalids = System.IO.Path.GetInvalidFileNameChars();
-                var newName = String.Join("_", file.Name.Split(invalids, StringSplitOptions.RemoveEmptyEntries) ).TrimEnd('.');
+                string replacementString = Regex.Replace(file.Name, @"[ ,]", "_");
+                replacementString = Regex.Replace(replacementString, @"ß", "ss");
+
+                Regex rx = new Regex(@"([A-Za-z0-9\.\-_])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+                MatchCollection matches = rx.Matches(replacementString);
+
+                string sanitizedName = string.Empty;
+
+                foreach(Match match in matches)
+                {
+                    sanitizedName = $"{sanitizedName}{match.Value}";
+                }
+
                 var path = Path.Combine(Environment.ContentRootPath,
-                   "wwwroot","temp", newName);
+                   "wwwroot","temp", sanitizedName);
 
                 await using FileStream writeStream = new(path, FileMode.Create);
                 using var readStream = file.OpenReadStream(maxFileSize);
@@ -279,7 +291,8 @@
                 var fil = new UploadedFile
                     {
                         File = file,
-                        IsPublic = true
+                        IsPublic = true,
+                        SanitizedFilename = sanitizedName
                     };
 
 
