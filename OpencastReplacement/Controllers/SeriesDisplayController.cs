@@ -2,6 +2,7 @@
 using MongoDB.Driver;
 using OpencastReplacement.Data;
 using OpencastReplacement.Models;
+using System.Text.RegularExpressions;
 
 namespace OpencastReplacement.Controllers
 {
@@ -60,6 +61,7 @@ namespace OpencastReplacement.Controllers
 
             for(int i = 0; i < vids.Length; i++)
             {
+                string descr = Regex.Replace(series.Videos[i].Beschreibung ?? string.Empty, "[^a-zA-Z0-9ÄÖÜäöü ._,ß()]", string.Empty);
                 vids[i] = string.Join(System.Environment.NewLine, new string[]
                 {
                     "{\"sources\": [{",
@@ -68,7 +70,7 @@ namespace OpencastReplacement.Controllers
                     "\"type\": \"video/mp4\"",
                     "}],",
                     $"\"name\": \"{series.Videos[i].Titel ?? string.Empty}\",",
-                    $"\"description\": \"{series.Videos[i].Beschreibung ?? string.Empty}\",",
+                    $"\"description\": \"{descr}\",",
                     "\"poster\": \"/images/BS18.jpg\"",
                     "}"
                 });

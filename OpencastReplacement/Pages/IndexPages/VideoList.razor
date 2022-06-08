@@ -23,7 +23,7 @@
                 SearchFunc="Search" 
                 CoerceValue="true" 
                 AdornmentIcon="@Icons.Material.Filled.Search"
-                ResetValueOnEmptyText="true" />
+                ResetValueOnEmptyText="false" />
         </MudItem>
         <MudItem xs="3" md="2" lg="1">
             <MudButton OnClick="ResetSearch" Variant="Variant.Outlined">Reset</MudButton>
@@ -65,7 +65,7 @@
             <MudItem xs="12">
                 @foreach(var tag in vid.Tags)
                 {
-                    <MudChip Color="Color.Default">@tag</MudChip>
+                    <MudChip Color="Color.Default" OnClick="() => OnChipClick(tag)" >@tag</MudChip>
                 }
             </MudItem>
             <MudItem xs="6" md="4">
@@ -104,7 +104,7 @@
     private List<Video> selectedIds = new();
 
     private ImmutableList<Video> _videos = ImmutableList<Video>.Empty;
-    private ImmutableList<Video> _videosFiltered => (string.IsNullOrWhiteSpace(value)) ? _videos : ImmutableList<Video>.Empty.AddRange(_videos.Where(v => v.FileName.Contains(value, StringComparison.InvariantCultureIgnoreCase) || v.Tags.Contains(value, (IEqualityComparer<string>)comparer)));
+    private ImmutableList<Video> _videosFiltered => (string.IsNullOrWhiteSpace(value)) ? _videos : ImmutableList<Video>.Empty.AddRange(_videos.Where(v => (v.Beschreibung ?? string.Empty).Contains(value, StringComparison.InvariantCultureIgnoreCase) || (v.Titel ?? string.Empty).Contains(value, StringComparison.InvariantCultureIgnoreCase) || v.FileName.Contains(value, StringComparison.InvariantCultureIgnoreCase) || v.Tags.Contains(value, (IEqualityComparer<string>)comparer)));
     private ImmutableList<Video> _videosFilteredByOwner => showOnlyOwnVideos ? ImmutableList<Video>.Empty.AddRange(_videosFiltered.Where(v => v.UserId.Equals(user?.Identity?.Name))) : _videosFiltered;
 
     private ImmutableList<Tag> _tags = ImmutableList<Tag>.Empty;
@@ -127,10 +127,17 @@
         return $"videolist_{id}";
     }
 
+    private void OnChipClick(string tag)
+    {
+        value = tag;
+        StateHasChanged();
+    }
+
     private void ResetSearch()
     {
         value = string.Empty;
         autocomplete?.Clear();
+        autocomplete?.Reset();
         StateHasChanged();
     }
 
@@ -253,60 +260,4 @@
         }
         return list.Where(x => x.Contains(val, StringComparison.InvariantCultureIgnoreCase));
     }
-
-/*
-<MudSimpleTable Hover="false">
-    <thead>
-        <tr>
-            <th></th>
-            <th>Name</th>
-            <th>Ersteller</th>
-            <th>Größe (MB)</th>
-            <th>Dauer</th>
-            <th>Tags</th>
-            <th>Öffentlich</th>
-            <th>Auflösung</th>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach(var vid in _videosFilteredByOwner)
-        {
-            <tr @key="IdToKeyVideoList(vid.Id)">
-                <td>
-                    @if(showSelector)
-                    {
-                        <MudCheckBox T="bool" Checked="(IsSelected(vid))" CheckedChanged="(() => ToggleSelection(vid))"></MudCheckBox>
-                    }
-                </td>
-                <td>@vid.FileName</td>
-                <td>@vid.UserId</td>
-                <td>@ByteToMegabyte(@vid.FileSize)</td>
-                <td>@vid.Duration.Hours:@vid.Duration.Minutes:@vid.Duration.Seconds</td>
-                <td>
-                    @foreach(var tag in vid.Tags)
-                    {
-                        <MudChip Color="Color.Default">@tag</MudChip>
-                    }
-                </td>
-                <td>@(vid.Public ? "Öffentlich" : "Privat")</td>
-                <td>@($"{vid.Width}x{vid.Height}")</td>
-                <td><MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Video?id={vid.Id}") Color="Color.Secondary"></MudIconButton></td>
-                <td><MudButton Variant="Variant.Outlined" OnClick="(() => LinkToClipboard(vid.Id))">Link kopieren</MudButton></td>
-                <td><MudButton Variant="Variant.Filled" OnClick="(() => EmbedToClipboard(vid))">Embedcode kopieren</MudButton></td>
-                <td>
-                    @if (vid.UserId.Equals(user?.Identity?.Name))
-                    {
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="(() => OpenEditDialog(vid))" Color="Color.Info"></MudIconButton>
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="(() => DeleteVideo(vid))" Color="Color.Warning"></MudIconButton>
-                    }
-                </td>
-            </tr>
-        }
-    </tbody>
-</MudSimpleTable>
-*/
 }
