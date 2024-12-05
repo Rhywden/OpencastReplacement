@@ -17,28 +17,28 @@
     <MudGrid>
         <MudItem xs="9" md="10" lg="4">
             <MudAutocomplete @bind-Value="value"
-                @ref="autocomplete"
-                Label="Suche"
-                T="string" 
-                SearchFunc="Search" 
-                CoerceValue="true" 
-                AdornmentIcon="@Icons.Material.Filled.Search"
-                ResetValueOnEmptyText="false" />
+            @ref="autocomplete"
+            Label="Suche"
+            T="string" 
+            SearchFunc="Search" 
+            CoerceValue="true" 
+            AdornmentIcon="@Icons.Material.Filled.Search"
+            ResetValueOnEmptyText="false" />
         </MudItem>
         <MudItem xs="3" md="2" lg="1">
             <MudButton OnClick="ResetSearch" Variant="Variant.Outlined">Reset</MudButton>
         </MudItem>
         <MudItem xs="12" md="4" lg="2">
-            <MudCheckBox @bind-Checked="@showOnlyOwnVideos" Label="Nur eigene Videos zeigen"></MudCheckBox>
+            <MudCheckBox T="bool" @bind-Checked="@showOnlyOwnVideos" Label="Nur eigene Videos zeigen"></MudCheckBox>
         </MudItem>
         <MudItem xs="12" md="4" lg="2">
-            <MudCheckBox @bind-Checked="@showSelector" Label="Videos für Serie aussuchen"></MudCheckBox>
+            <MudCheckBox T="bool" @bind-Checked="@showSelector" Label="Videos für Serie aussuchen"></MudCheckBox>
         </MudItem>
         <MudItem xs="12" md="4" lg="2">
             <MudButton Variant="Variant.Filled" Disabled="(selectedIds.Count == 0)" OnClick="() => OpenCreateSeriesDialog()">Serie erstellen</MudButton>
         </MudItem>
     </MudGrid>
-    
+
 </MudPaper>
 
 
@@ -65,7 +65,7 @@
             <MudItem xs="12">
                 @foreach(var tag in vid.Tags)
                 {
-                    <MudChip Color="Color.Default" OnClick="() => OnChipClick(tag)" >@tag</MudChip>
+                    <MudChip T="string" Color="Color.Default" OnClick="() => OnChipClick(tag)" >@tag</MudChip>
                 }
             </MudItem>
             <MudItem xs="6" md="4">
@@ -133,11 +133,13 @@
         StateHasChanged();
     }
 
-    private void ResetSearch()
+    private async void ResetSearch()
     {
         value = string.Empty;
-        autocomplete?.Clear();
-        autocomplete?.Reset();
+        if(autocomplete is not null) {
+            await autocomplete.ClearAsync();
+            await autocomplete.ResetAsync();
+        }
         StateHasChanged();
     }
 
@@ -180,14 +182,13 @@
         var options = new DialogOptions
             {
                 MaxWidth = MaxWidth.Large,
-                FullWidth = true,
-                DisableBackdropClick = true
+                FullWidth = true
             };
         var parameters = new DialogParameters { ["thisVideo"] = video };
         var dialog = DialogService.Show<VideoDialog>("Informationen zum Video", parameters, options);
         var result = await dialog.Result;
 
-        if(!result.Cancelled)
+        if(!result.Canceled)
         {
             var content = (Video)result.Data;
             foreach(string videotag in content.Tags)
@@ -221,7 +222,7 @@
 
         var result = await dialog.Result;
 
-        if(!result.Cancelled)
+        if(!result.Canceled)
         {
             var content = (Series)result.Data;
             Put(new Actions.AddSeries.Request(content));
@@ -252,9 +253,9 @@
         await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", embed);
     }
 
-    private async Task<IEnumerable<string>> Search(string val)
+    private async Task<IEnumerable<string>> Search(string val, CancellationToken cancellationToken)
     {
-        if(string.IsNullOrWhiteSpace(val))
+        if (string.IsNullOrWhiteSpace(val))
         {
             return list;
         }

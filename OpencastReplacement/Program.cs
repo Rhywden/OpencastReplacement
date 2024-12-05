@@ -46,6 +46,8 @@ builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx =>
 });
 builder.Services.AddSingleton<FileQueueMonitor>();
 
+builder.Services.AddHealthChecks();
+
 builder.Services.AddMudServices();
 builder.Services.AddRudder<AppState>(options =>
 {
@@ -121,6 +123,8 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHealthChecks("/health");
 
 app.MapControllers();
 app.MapBlazorHub();

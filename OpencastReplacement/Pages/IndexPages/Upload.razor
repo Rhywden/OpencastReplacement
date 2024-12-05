@@ -19,6 +19,7 @@
 
 @inherits StateComponent<AppState>
 
+
 <AuthorizeView Roles="admin,lehrer">
     <Authorized>
         <style>
@@ -77,7 +78,7 @@
                         <td>
                             @foreach(var tag in file.Tags)
                                 {
-                                    <MudChip Color="Color.Default" OnClose="@(() => OnClose(file, tag))">@tag</MudChip>
+                                    <MudChip T="string" Color="Color.Default" OnClose="@(() => OnClose(file, tag))">@tag</MudChip>
                                 }
                             <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => OpenAddTagDialog(file))" Size="Size.Small" />
                         </td>
@@ -167,15 +168,14 @@
         var options = new DialogOptions
             {
                 MaxWidth = MaxWidth.Large,
-                FullWidth = true,
-                DisableBackdropClick = true
+                FullWidth = true
             };
 
         var parameters = new DialogParameters { ["thisVideo"] = video };
         var dialog = DialogService.Show<VideoDialog>("Informationen zum Video", parameters, options);
         var result = await dialog.Result;
 
-        if(!result.Cancelled)
+        if(result is not null && result?.Canceled != false )
         {
             var content = (Video)result.Data;
             foreach(string videotag in content.Tags)

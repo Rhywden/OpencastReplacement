@@ -31,7 +31,7 @@
             <MudItem xs="12">
                 @foreach(var tag in selectedTags)
                 {
-                    <MudChip Color="Color.Default" OnClose="@(() => RemoveTag(tag))">@tag</MudChip>
+                    <MudChip T="string" Color="Color.Default" OnClose="@(() => RemoveTag(tag))">@tag</MudChip>
                 }
             </MudItem>
             <MudItem xs="12">
@@ -84,7 +84,7 @@
         description = thisVideo.Beschreibung;
     }
 
-    private async Task<IEnumerable<string>> Search(string val)
+    private async Task<IEnumerable<string>> Search(string val, CancellationToken cancellationToken)
     {
         if(string.IsNullOrWhiteSpace(val))
         {
