@@ -1,0 +1,28 @@
+﻿@if (rolesExist)
+{
+    <AuthorizeView Roles="@roles">
+        <Authorized>
+            @ChildContent
+        </Authorized>
+        <NotAuthorized>
+            Bitte einloggen
+        </NotAuthorized>
+    </AuthorizeView>
+}
+else
+{
+    <AuthorizeView>
+        <Authorized>
+            @ChildContent
+        </Authorized>
+        <NotAuthorized>
+            Bitte einloggen
+        </NotAuthorized>
+    </AuthorizeView>
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    private string? roles = System.Environment.GetEnvironmentVariable("ROLES");
+    private bool rolesExist => !string.IsNullOrEmpty(roles);
+}

@@ -20,107 +20,106 @@
 @inherits StateComponent<AppState>
 
 
-<AuthorizeView Roles="admin,lehrer">
-    <Authorized>
-        <style>
-            .drag-drop-zone {
-                display: flex;align-items: center;justify-content: center;transition: all .4s;min-height: 200px;
-            }
-            .drag-drop-input {
-                position: absolute;width: 80%;height: 200px;opacity: 0;cursor:pointer;
-                z-index:2;
-            }
-            .drag-enter {
-                box-shadow: var(--mud-elevation-10);
-            }
-            .list{
-                padding:2em;min-width:100%;
-            }
-        </style>
+<RoleBaseAuthorize>
 
-        <MudPaper @ondragenter="@(()=>_dragEnterStyle="drag-enter")"
-                  @ondragleave="@(()=>_dragEnterStyle=null)"
-                  @ondragend="@(()=>_dragEnterStyle=null)"
-                  Class=@("drag-drop-zone "+ _dragEnterStyle)>
-                <MudText Typo="Typo.h5">
-                    Zum Hochladen hier clicken oder eine Datei per Drag'n'Drop ablegen<br />
-                    Maximale Dateigröße: 800 MB
-                </MudText>
-            <InputFile OnChange="@LoadFiles" multiple class="drag-drop-input" />
-        </MudPaper>
-        @if (isLoading)
-        {
-            <MudProgressLinear Color="Color.Primary" Value="@progressInt" Class="my-7" /><MudText>@progressInt%</MudText>
+    <style>
+        .drag-drop-zone {
+            display: flex;align-items: center;justify-content: center;transition: all .4s;min-height: 200px;
         }
+        .drag-drop-input {
+            position: absolute;width: 80%;height: 200px;opacity: 0;cursor:pointer;
+            z-index:2;
+        }
+        .drag-enter {
+            box-shadow: var(--mud-elevation-10);
+        }
+        .list{
+            padding:2em;min-width:100%;
+        }
+    </style>
 
-        <MudText Typo="Typo.h4">Hochgeladene Dateien</MudText>
+    <MudPaper @ondragenter="@(()=>_dragEnterStyle="drag-enter")"
+                @ondragleave="@(()=>_dragEnterStyle=null)"
+                @ondragend="@(()=>_dragEnterStyle=null)"
+                Class=@("drag-drop-zone "+ _dragEnterStyle)>
+            <MudText Typo="Typo.h5">
+                Zum Hochladen hier clicken oder eine Datei per Drag'n'Drop ablegen<br />
+                Maximale Dateigröße: 800 MB
+            </MudText>
+        <InputFile OnChange="@LoadFiles" multiple class="drag-drop-input" />
+    </MudPaper>
+    @if (isLoading)
+    {
+        <MudProgressLinear Color="Color.Primary" Value="@progressInt" Class="my-7" /><MudText>@progressInt%</MudText>
+    }
 
-        <MudSimpleTable Hover="false">
-            <thead>
-                <tr>        
-                    <th>Name</th>
-                    <th>Größe (Byte)</th>
-                    <th>Typ</th>
-                    <th>Optionen</th>
-                    <th>Tags &amp; Titel &amp; Beschreibung</th>
-                    <th></th>
+    <MudText Typo="Typo.h4">Hochgeladene Dateien</MudText>
+
+    <MudSimpleTable Hover="false">
+        <thead>
+            <tr>        
+                <th>Name</th>
+                <th>Größe (Byte)</th>
+                <th>Typ</th>
+                <th>Optionen</th>
+                <th>Tags &amp; Titel &amp; Beschreibung</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach(var file in loadedFiles) {
+                <tr @key="IdToKeyUploads(file.Id)">
+                    <td>@file.File.Name</td>
+                    <td>@file.File.Size</td>
+                    <td>@file.File.ContentType</td>
+                    <td>
+                        <MudCheckBox Label="Öffentlich" T="bool" Checked="file.IsPublic" CheckedChanged="(() => TogglePublic(file))"></MudCheckBox>
+                    </td>
+                    <td>
+                        @foreach(var tag in file.Tags)
+                            {
+                                <MudChip T="string" Color="Color.Default" OnClose="@(() => OnClose(file, tag))">@tag</MudChip>
+                            }
+                        <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => OpenAddTagDialog(file))" Size="Size.Small" />
+                    </td>
+                    <td>
+                        <MudButton Disabled="@(IsNotConvertible(file))" Variant="Variant.Filled" Color="Color.Warning" OnClick="@(() => StartEncoding(file))" >Start</MudButton>
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach(var file in loadedFiles) {
-                    <tr @key="IdToKeyUploads(file.Id)">
-                        <td>@file.File.Name</td>
-                        <td>@file.File.Size</td>
-                        <td>@file.File.ContentType</td>
-                        <td>
-                            <MudCheckBox Label="Öffentlich" T="bool" Checked="file.IsPublic" CheckedChanged="(() => TogglePublic(file))"></MudCheckBox>
-                        </td>
-                        <td>
-                            @foreach(var tag in file.Tags)
-                                {
-                                    <MudChip T="string" Color="Color.Default" OnClose="@(() => OnClose(file, tag))">@tag</MudChip>
-                                }
-                            <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="@(() => OpenAddTagDialog(file))" Size="Size.Small" />
-                        </td>
-                        <td>
-                            <MudButton Disabled="@(IsNotConvertible(file))" Variant="Variant.Filled" Color="Color.Warning" OnClick="@(() => StartEncoding(file))" >Start</MudButton>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </MudSimpleTable>
+            }
+        </tbody>
+    </MudSimpleTable>
 
-        <MudText Typo="Typo.h4">Warteschlange für Konvertierungen</MudText>
+    <MudText Typo="Typo.h4">Warteschlange für Konvertierungen</MudText>
 
-        <MudSimpleTable Hover="false">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Zustand</th>
-                    <th>Fortschritt</th>
-                    <th></th>
+    <MudSimpleTable Hover="false">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Zustand</th>
+                <th>Fortschritt</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach(var conv in _conversions)
+            {
+                <tr @key="IdToKeyConversions(conv.ConversionId)">
+                    <td>@conv.Filename</td>
+                    <td>
+                        @(conv.HasStarted ? "In Bearbeitung" : "Wartet")
+                    </td>
+                    <td>
+                        <MudProgressLinear Color="Color.Primary" Value="Convert.ToInt32(conv.Progress)" Class="my-7" />
+                    </td>
+                    <td>
+                        <MudText>@conv.Progress%</MudText>
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach(var conv in _conversions)
-                {
-                    <tr @key="IdToKeyConversions(conv.ConversionId)">
-                        <td>@conv.Filename</td>
-                        <td>
-                            @(conv.HasStarted ? "In Bearbeitung" : "Wartet")
-                        </td>
-                        <td>
-                            <MudProgressLinear Color="Color.Primary" Value="Convert.ToInt32(conv.Progress)" Class="my-7" />
-                        </td>
-                        <td>
-                            <MudText>@conv.Progress%</MudText>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </MudSimpleTable>
-    </Authorized>
-</AuthorizeView>
+            }
+        </tbody>
+    </MudSimpleTable>
+</RoleBaseAuthorize>
 @code {
     private string? _dragEnterStyle;
     private bool Check480p { get; set; }
@@ -172,10 +171,10 @@
             };
 
         var parameters = new DialogParameters { ["thisVideo"] = video };
-        var dialog = DialogService.Show<VideoDialog>("Informationen zum Video", parameters, options);
+        var dialog = await DialogService.ShowAsync<VideoDialog>("Informationen zum Video", parameters, options);
         var result = await dialog.Result;
 
-        if(result is not null && result?.Canceled != false )
+        if(result is not null && result?.Canceled != true )
         {
             var content = (Video)result.Data;
             foreach(string videotag in content.Tags)

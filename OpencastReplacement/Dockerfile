@@ -28,4 +28,6 @@ RUN dotnet publish "./OpencastReplacement.csproj" -c $BUILD_CONFIGURATION -o /ap
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+COPY ffmpeg /app/
+COPY ffprobe /app/
 ENTRYPOINT ["dotnet", "OpencastReplacement.dll"]

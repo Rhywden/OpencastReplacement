@@ -35,11 +35,21 @@ namespace OpencastReplacement.Services
         public async Task<bool> StartEncoding(Video video)
         {
             GlobalFFOptions.Configure(new FFOptions { BinaryFolder = configurationManager["ffmpeg:exepath"] });
-            string input = Path.Combine(hostingEnv.ContentRootPath,
-                        "wwwroot", "temp", video.FileName);
-            string output = Path.Combine(hostingEnv.ContentRootPath,
-                        "wwwroot", "uploads", video.FileName);
-
+            string? input;
+            string? output;
+            if (System.Environment.GetEnvironmentVariable("VIDEO_STORAGE") == "external")
+            {
+                input = System.Environment.GetEnvironmentVariable("VIDEO_TEMP_PATH") + "/" + video.FileName;
+                output = System.Environment.GetEnvironmentVariable("VIDEO_STORAGE_PATH") + "/" + video.FileName;
+                if (input is null || output is null) throw new Exception("Path to video storage not set in appsettings.json"); 
+            }
+            else
+            {
+                input = Path.Combine(hostingEnv.ContentRootPath,
+                            "wwwroot", "temp", video.FileName);
+                output = Path.Combine(hostingEnv.ContentRootPath,
+                            "wwwroot", "uploads", video.FileName);
+            }
             var media = await FFProbe.AnalyseAsync(input);
 
             var conversion = new Conversion
@@ -112,6 +122,8 @@ namespace OpencastReplacement.Services
                 };
                 _store.Put(new Actions.AddVideo.Request(videoToBeAdded: vid));
             } catch (Exception e) {
+                File.Delete(input);
+                _store.Put(new Actions.DeleteConversion.Request(conversion));
                 logger.LogCritical($"FFMpeg threw error: {e.InnerException}");
             }
             return true;

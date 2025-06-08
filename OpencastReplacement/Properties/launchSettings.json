@@ -32,10 +32,20 @@
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
       "environmentVariables": {
         "ASPNETCORE_HTTPS_PORTS": "8081",
-        "ASPNETCORE_HTTP_PORTS": "8080"
+        "ASPNETCORE_HTTP_PORTS": "8080",
+        "MONGODB_CONNECTION": "mongodb://admin:75Hq3Gn4HRHb4BDg@192.168.10.16:27017,192.168.10.14:27017,192.168.10.30:27107/?authSource=admin&ssl=false&retryWrites=false",
+        "OIDC_AUTHORITY": "https://id.bs18.de/realms/master",
+        "OIDC_CLIENT_ID": "OpencastReplacementDev",
+        "OIDC_CLIENT_SECRET": "UvxARs1i3BlqH6wAzhTQ13P29AXNIy6o",
+        "VIDEO_STORAGE": "internal",
+        "VIDEO_STORAGE_PATH": "/app/wwwroot/uploads",
+        "VIDEO_TEMP_PATH": "/app/wwwroot/temp",
+        "ROLES": "admin,lehrer",
+        "APP_URL": "https://localhost:7043"
       },
       "publishAllPorts": true,
-      "useSSL": true
+      "useSSL": true,
+      "sslPort": 7043
     }
   },
   "iisSettings": {

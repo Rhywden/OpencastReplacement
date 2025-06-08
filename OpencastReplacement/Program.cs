@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Microsoft.IdentityModel.Tokens;
 using RudderSingleton;
 using OpencastReplacement.Store;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,13 +69,14 @@ builder.Services.AddAuthentication(options =>
 {
     options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.SignOutScheme = OpenIdConnectDefaults.AuthenticationScheme;
-    options.Authority = Configuration["OIDC:Authority"];
-    options.ClientId = Configuration["OIDC:ClientId"];
-    options.ClientSecret = Configuration["OIDC:ClientSecret"];
+    options.Authority = System.Environment.GetEnvironmentVariable("OIDC_AUTHORITY");
+    options.ClientId = System.Environment.GetEnvironmentVariable("OIDC_CLIENT_ID");
+    options.ClientSecret = System.Environment.GetEnvironmentVariable("OIDC_CLIENT_SECRET");
     options.ResponseType = "code";
     options.Scope.Add("openid");
     options.Scope.Add("profile");
     options.Scope.Add("email");
+    options.Scope.Add("gruppen");
     options.Scope.Add("offline_access");
     options.ClaimActions.Add(new JsonKeyClaimAction("role", string.Empty, "role"));
     options.SaveTokens = true;
@@ -83,7 +85,7 @@ builder.Services.AddAuthentication(options =>
     {
         //map claim to name for display on the upper right corner after login.  Can be name, email, etc.
         NameClaimType = "name",
-        RoleClaimType = "role"
+        RoleClaimType = System.Environment.GetEnvironmentVariable("ROLE_CLAIM_TYPE") ?? "groups"
     };
     options.Events = new OpenIdConnectEvents
     {
@@ -98,6 +100,19 @@ builder.Services.AddAuthentication(options =>
             context.HandleResponse();
             context.Response.Redirect("/");
             return Task.CompletedTask;
+        },
+        OnUserInformationReceived = async context =>
+        {
+            var identity = context.Principal?.Identity as ClaimsIdentity;
+            if(identity is not null && context.User is not null && context.User.RootElement.TryGetProperty("groups", out var groups))
+            {
+                foreach (var group in groups.EnumerateArray())
+                {
+                    string? value = group.GetString();
+                    if(string.IsNullOrEmpty(value)) continue;
+                    identity.AddClaim(new Claim("groups", value));
+                }
+            }
         }
     };
 });

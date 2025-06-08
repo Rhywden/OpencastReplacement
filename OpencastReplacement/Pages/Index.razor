@@ -3,12 +3,6 @@
 @page "/"
 <PageTitle>Index</PageTitle>
 
-
-<AuthorizeView Roles="admin,lehrer">
-    <Authorized>
-        <VideoList />
-    </Authorized>
-    <NotAuthorized>
-        Bitte einloggen
-    </NotAuthorized>
-</AuthorizeView>
+<RoleBaseAuthorize>
+    <VideoList />
+</RoleBaseAuthorize>
