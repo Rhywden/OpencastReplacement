@@ -81,7 +81,12 @@ namespace OpencastReplacement.Services
                         pAry = ary[i].Split('=');
                         if (pAry[0].Equals("time"))
                         {
-                            TimeSpan timeComplete = TimeSpan.Parse(pAry[1]);
+                            TimeSpan timeComplete;
+                            var valid = TimeSpan.TryParse(pAry[1], out timeComplete);
+                            if(!valid)
+                            {
+                                timeComplete = media.Duration;
+                            }
                             TimeSpan timeLeft = media.Duration - timeComplete;
                             double secondsLeft = timeLeft.TotalSeconds;
                             double percentage =  Math.Round(100 - (secondsLeft * 100 / media.Duration.TotalSeconds),1);
