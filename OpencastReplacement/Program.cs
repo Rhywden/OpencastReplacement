@@ -1,17 +1,19 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.OAuth.Claims;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using OpencastReplacement.Services;
-using OpencastReplacement.Data;
-using MudBlazor.Services;
-using Microsoft.Identity.Web.UI;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Identity.Web;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.Authentication.OAuth.Claims;
+using Microsoft.Identity.Web.UI;
 using Microsoft.IdentityModel.Tokens;
-using RudderSingleton;
+using MudBlazor.Services;
+using OpencastReplacement.Data;
+using OpencastReplacement.Services;
 using OpencastReplacement.Store;
+using RudderSingleton;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,8 +38,10 @@ if (!Environment.IsDevelopment())
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor().AddMicrosoftIdentityConsentHandler();
 
+var mongodb = System.Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING") ?? Configuration["mongodb:connection"];
+
 builder.Services.AddSingleton<IFfmpegWrapper, FfmpegWrapper>();
-builder.Services.AddSingleton<IMongoConnection>(mc => new MongoConnection(Configuration["mongodb:connection"], Environment));
+builder.Services.AddSingleton<IMongoConnection>(mc => new MongoConnection(mongodb, Environment));
 builder.Services.AddSingleton(cm => new ConfigurationWrapper(Configuration));
 builder.Services.AddHostedService<QueuedHostedService>();
 builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx =>
@@ -61,21 +65,24 @@ builder.Services.AddRudder<AppState>(options =>
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
 .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
 {
     options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.SignOutScheme = OpenIdConnectDefaults.AuthenticationScheme;
-    options.Authority = Configuration["OIDC:Authority"];
-    options.ClientId = Configuration["OIDC:ClientId"];
-    options.ClientSecret = Configuration["OIDC:ClientSecret"];
+    options.Authority = System.Environment.GetEnvironmentVariable("OPENID_CONNECT_URL");
+    options.ClientId = System.Environment.GetEnvironmentVariable("OPENID_CONNECT_CLIENT_ID");
+    options.ClientSecret = System.Environment.GetEnvironmentVariable("OPENID_CONNECT_CLIENT_SECRET");
+    options.CallbackPath = "/signin-oidc";
     options.ResponseType = "code";
     options.Scope.Add("openid");
     options.Scope.Add("profile");
     options.Scope.Add("email");
     options.Scope.Add("offline_access");
+    options.Scope.Add("gruppen");
+    options.Scope.Add("test");
     options.ClaimActions.Add(new JsonKeyClaimAction("role", string.Empty, "role"));
     options.SaveTokens = true;
     options.GetClaimsFromUserInfoEndpoint = true;
@@ -98,6 +105,29 @@ builder.Services.AddAuthentication(options =>
             context.HandleResponse();
             context.Response.Redirect("/");
             return Task.CompletedTask;
+        },
+        OnUserInformationReceived = async context =>
+        {
+            var identity = context.Principal.Identity as ClaimsIdentity;
+
+            if (identity != null && context.User != null)
+            {
+                if (context.User.RootElement.TryGetProperty("groups", out var groups)) {
+                    foreach (var group in groups.EnumerateArray())
+                    {
+                        var groupName = group.GetString() ?? string.Empty;
+                        //identity.AddClaim(new Claim("role", groupName));
+                    }
+                }
+                
+                // Example: Add a claim based on UserInfo
+                //if (context.User.TryGetProperty("custom_property", out var customProperty))
+                //{
+                //identity.AddClaim(new Claim("custom_claim", customProperty.GetString() ?? string.Empty));
+                //}
+            }
+
+            await Task.CompletedTask;
         }
     };
 });

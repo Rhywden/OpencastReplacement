@@ -32,10 +32,15 @@
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
       "environmentVariables": {
         "ASPNETCORE_HTTPS_PORTS": "8081",
-        "ASPNETCORE_HTTP_PORTS": "8080"
+        "ASPNETCORE_HTTP_PORTS": "8080",
+        "MONGODB_CONNECTION_STRING": "mongodb://admin:75Hq3Gn4HRHb4BDg@192.168.10.16:27017,192.168.10.14:27017,192.168.10.30:27107/?authSource=admin&ssl=false&retryWrites=false",
+        "OPENID_CONNECT_URL": "https://id.bs18.de/realms/master",
+        "OPENID_CONNECT_CLIENT_ID": "OpencastReplacementDev",
+        "OPENID_CONNECT_CLIENT_SECRET": "UvxARs1i3BlqH6wAzhTQ13P29AXNIy6o"
       },
       "publishAllPorts": true,
-      "useSSL": true
+      "useSSL": true,
+      "sslPort": 7043
     }
   },
   "iisSettings": {

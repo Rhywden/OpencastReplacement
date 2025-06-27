@@ -4,10 +4,10 @@
 <AuthorizeView Roles="admin,lehrer">
     <Authorized>
         Hallo @user?.Identity?.Name
-        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Link="logout">Logout</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="logout">Logout</MudButton>
     </Authorized>
     <NotAuthorized>
-        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Link="login">Login</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="login">Login</MudButton>
     </NotAuthorized>
 </AuthorizeView>
 
