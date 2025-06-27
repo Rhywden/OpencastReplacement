@@ -9,6 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="wwwroot\ffmpeg" />
+    <Content Remove="wwwroot\ffprobe" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FFMpegCore" Version="5.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.4" />
     <PackageReference Include="Microsoft.Identity.Web" Version="3.8.3" />
@@ -25,6 +30,11 @@
 
   <ItemGroup>
     <Folder Include="Events\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\ffmpeg" />
+    <None Include="wwwroot\ffprobe" />
   </ItemGroup>
 
 </Project>

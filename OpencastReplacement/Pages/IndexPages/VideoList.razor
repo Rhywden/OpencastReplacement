@@ -80,7 +80,7 @@
                 } else {
                     <MudIconButton Icon="@Icons.Material.Filled.PublicOff"></MudIconButton>
                 }
-                <MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Video?id={vid.Id}") Color="Color.Secondary"></MudIconButton>
+                <MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Href=@($"{baseUrl}/Video?id={vid.Id}") Color="Color.Secondary"></MudIconButton>
                 @if (vid.UserId.Equals(user?.Identity?.Name))
                 {
                     <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="(() => OpenEditDialog(vid))" Color="Color.Info"></MudIconButton>
@@ -113,7 +113,7 @@
 
     private string? value;
 
-    private string baseUrl => Environment.IsDevelopment() ? "https://localhost:7043" : "https://video.bs18.de";
+    private string baseUrl => System.Environment.GetEnvironmentVariable("APP_URL") ?? string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -185,7 +185,7 @@
                 FullWidth = true
             };
         var parameters = new DialogParameters { ["thisVideo"] = video };
-        var dialog = DialogService.Show<VideoDialog>("Informationen zum Video", parameters, options);
+        var dialog = await DialogService.ShowAsync<VideoDialog>("Informationen zum Video", parameters, options);
         var result = await dialog.Result;
 
         if(!result.Canceled)
@@ -218,7 +218,7 @@
         };
 
         var parameters = new DialogParameters { ["Series"] = series };
-        var dialog = DialogService.Show<CreateSeriesDialog>("Neue Serie erstellen", parameters);
+        var dialog = await DialogService.ShowAsync<CreateSeriesDialog>("Neue Serie erstellen", parameters);
 
         var result = await dialog.Result;
 

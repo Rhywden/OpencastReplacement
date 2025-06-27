@@ -12,7 +12,6 @@ using MudBlazor.Services;
 using OpencastReplacement.Data;
 using OpencastReplacement.Services;
 using OpencastReplacement.Store;
-using RudderSingleton;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -72,14 +71,14 @@ builder.Services.AddAuthentication(options =>
 {
     options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.SignOutScheme = OpenIdConnectDefaults.AuthenticationScheme;
-    options.Authority = System.Environment.GetEnvironmentVariable("OPENID_CONNECT_URL");
-    options.ClientId = System.Environment.GetEnvironmentVariable("OPENID_CONNECT_CLIENT_ID");
-    options.ClientSecret = System.Environment.GetEnvironmentVariable("OPENID_CONNECT_CLIENT_SECRET");
-    options.CallbackPath = "/signin-oidc";
+    options.Authority = Configuration["OIDC:Authority"];
+    options.ClientId = Configuration["OIDC:ClientId"];
+    options.ClientSecret = Configuration["OIDC:ClientSecret"];
     options.ResponseType = "code";
     options.Scope.Add("openid");
     options.Scope.Add("profile");
     options.Scope.Add("email");
+    options.Scope.Add("gruppen");
     options.Scope.Add("offline_access");
     options.Scope.Add("gruppen");
     options.Scope.Add("test");
@@ -90,7 +89,7 @@ builder.Services.AddAuthentication(options =>
     {
         //map claim to name for display on the upper right corner after login.  Can be name, email, etc.
         NameClaimType = "name",
-        RoleClaimType = "role"
+        RoleClaimType = System.Environment.GetEnvironmentVariable("ROLE_CLAIM_TYPE") ?? "groups"
     };
     options.Events = new OpenIdConnectEvents
     {
@@ -105,29 +104,6 @@ builder.Services.AddAuthentication(options =>
             context.HandleResponse();
             context.Response.Redirect("/");
             return Task.CompletedTask;
-        },
-        OnUserInformationReceived = async context =>
-        {
-            var identity = context.Principal.Identity as ClaimsIdentity;
-
-            if (identity != null && context.User != null)
-            {
-                if (context.User.RootElement.TryGetProperty("groups", out var groups)) {
-                    foreach (var group in groups.EnumerateArray())
-                    {
-                        var groupName = group.GetString() ?? string.Empty;
-                        //identity.AddClaim(new Claim("role", groupName));
-                    }
-                }
-                
-                // Example: Add a claim based on UserInfo
-                //if (context.User.TryGetProperty("custom_property", out var customProperty))
-                //{
-                //identity.AddClaim(new Claim("custom_claim", customProperty.GetString() ?? string.Empty));
-                //}
-            }
-
-            await Task.CompletedTask;
         }
     };
 });

@@ -12,36 +12,34 @@
 
 @inherits StateComponent<AppState>
 
-<AuthorizeView Roles="admin,lehrer">
-    <Authorized>
-        @foreach(var eintrag in _meineSerien)
-        {
-            <MudPaper Class="pa-3 ma-3">
-                <MudGrid>
-                    <MudItem xs="6"><MudText Typo="Typo.h3">@eintrag.Name</MudText></MudItem>
-                    <MudItem xs="6">
-                        <MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Series?id={eintrag.Id}")></MudIconButton>
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="(() => Delete(eintrag))" Color="Color.Warning"></MudIconButton>
-                        <MudButton Variant="Variant.Outlined" OnClick="(() => LinkToClipboard(eintrag.Id))">Direktlink kopieren</MudButton>
-                        <MudButton Variant="Variant.Filled" OnClick="(() => EmbedToClipboard(eintrag))">Embedcode kopieren</MudButton>
-                    </MudItem>
-                    <MudItem xs="12">
-                        @foreach(var vid in eintrag.Videos)
-                        {
-                            <MudText>@vid.Titel (@vid.FileName)</MudText>
-                        }
-                    </MudItem>
-                </MudGrid>
-            </MudPaper>
-        }
-    </Authorized>
-</AuthorizeView>
+<RoleBaseAuthorize>
+    @foreach(var eintrag in _meineSerien)
+    {
+        <MudPaper Class="pa-3 ma-3">
+            <MudGrid>
+                <MudItem xs="6"><MudText Typo="Typo.h3">@eintrag.Name</MudText></MudItem>
+                <MudItem xs="6">
+                    <MudIconButton Icon="@Icons.Material.Filled.PlayCircleFilled" Link=@($"{baseUrl}/Series?id={eintrag.Id}")></MudIconButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="(() => Delete(eintrag))" Color="Color.Warning"></MudIconButton>
+                    <MudButton Variant="Variant.Outlined" OnClick="(() => LinkToClipboard(eintrag.Id))">Direktlink kopieren</MudButton>
+                    <MudButton Variant="Variant.Filled" OnClick="(() => EmbedToClipboard(eintrag))">Embedcode kopieren</MudButton>
+                </MudItem>
+                <MudItem xs="12">
+                    @foreach(var vid in eintrag.Videos)
+                    {
+                        <MudText>@vid.Titel (@vid.FileName)</MudText>
+                    }
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+</RoleBaseAuthorize>
 
 @code {
     private ImmutableList<Series> _serien = ImmutableList<Series>.Empty;
     private ImmutableList<Series> _meineSerien => _serien.Where(s => s.UserId.Equals(user?.Identity?.Name)).ToImmutableList();
     private ClaimsPrincipal? user;
-    private string baseUrl => Environment.IsDevelopment() ? "https://localhost:7043" : "https://video.bs18.de";
+    private string? baseUrl => System.Environment.GetEnvironmentVariable("https://localhost:7043");
     protected override async Task OnInitializedAsync()
     {
         user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
