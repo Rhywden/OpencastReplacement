@@ -40,6 +40,7 @@ namespace OpencastReplacement.Services
             if (System.Environment.GetEnvironmentVariable("VIDEO_STORAGE") == "external")
             {
                 input = System.Environment.GetEnvironmentVariable("VIDEO_TEMP_PATH") + "/" + video.FileName;
+                logger.LogInformation($"Exe path: {configurationManager["ffmpeg:exepath"]}");
                 output = System.Environment.GetEnvironmentVariable("VIDEO_STORAGE_PATH") + "/" + video.FileName;
                 if (input is null || output is null) throw new Exception("Path to video storage not set in appsettings.json"); 
             }

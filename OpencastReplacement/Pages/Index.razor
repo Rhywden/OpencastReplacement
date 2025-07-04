@@ -1,8 +1,36 @@
 ﻿@using OpencastReplacement.Pages.IndexPages
 
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+
 @page "/"
 <PageTitle>Index</PageTitle>
 
 <RoleBaseAuthorize>
     <VideoList />
 </RoleBaseAuthorize>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            Console.WriteLine($"User: {user.Identity.Name}");
+            foreach (var claim in user.Claims)
+            {
+                Console.WriteLine($"{claim.Type}: {claim.Value}");
+            }
+        } else
+        {
+            Console.WriteLine($"User is not authenticated. ** {authState.User.Identities.Count()} ** ");
+
+        }
+
+        await base.OnInitializedAsync();
+
+        // Any initialization logic can go here
+    }
+}

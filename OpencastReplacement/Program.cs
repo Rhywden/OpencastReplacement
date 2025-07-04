@@ -5,14 +5,19 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using Microsoft.IdentityModel.Tokens;
 using MudBlazor.Services;
+using OpencastReplacement;
 using OpencastReplacement.Data;
+using OpencastReplacement.Models;
 using OpencastReplacement.Services;
 using OpencastReplacement.Store;
+using RudderSingleton;
 using System.Security.Claims;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,26 +67,29 @@ builder.Services.AddRudder<AppState>(options =>
 #endif*/
 });
 
+var test = System.Environment.GetEnvironmentVariable("OIDC_AUTHORITY");
+
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
+    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+}).AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, opts =>
+{
+    
+})
 .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
 {
     options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.SignOutScheme = OpenIdConnectDefaults.AuthenticationScheme;
-    options.Authority = Configuration["OIDC:Authority"];
-    options.ClientId = Configuration["OIDC:ClientId"];
-    options.ClientSecret = Configuration["OIDC:ClientSecret"];
+    options.Authority = System.Environment.GetEnvironmentVariable("OIDC_AUTHORITY");
+    options.ClientId = System.Environment.GetEnvironmentVariable("OIDC_CLIENT_ID");
+    options.ClientSecret = System.Environment.GetEnvironmentVariable("OIDC_CLIENT_SECRET");
     options.ResponseType = "code";
     options.Scope.Add("openid");
     options.Scope.Add("profile");
     options.Scope.Add("email");
     options.Scope.Add("gruppen");
     options.Scope.Add("offline_access");
-    options.Scope.Add("gruppen");
-    options.Scope.Add("test");
     options.ClaimActions.Add(new JsonKeyClaimAction("role", string.Empty, "role"));
     options.SaveTokens = true;
     options.GetClaimsFromUserInfoEndpoint = true;
@@ -107,6 +115,9 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
+
+builder.Services.AddTransient<ITicketStore, InMemoryTicketStore>();
+builder.Services.AddSingleton<IPostConfigureOptions<CookieAuthenticationOptions>, ConfigureCookieAuthenticationOptions>();
 
 var app = builder.Build();
 
