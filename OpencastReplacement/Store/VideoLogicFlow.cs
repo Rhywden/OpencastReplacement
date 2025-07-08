@@ -10,11 +10,13 @@ namespace OpencastReplacement.Store
         private readonly Store<AppState> _store;
         private readonly IMongoConnection _connection;
         private readonly IWebHostEnvironment _hostingEnv;
-        public VideoLogicFlow(Store<AppState> store, IMongoConnection connection, IWebHostEnvironment env)
+        private readonly ILogger<VideoLogicFlow> _logger;
+        public VideoLogicFlow(Store<AppState> store, IMongoConnection connection, IWebHostEnvironment env, ILogger<VideoLogicFlow> logger)
         {
             _store = store;
             _connection = connection;
             _hostingEnv = env;
+            _logger = logger;
         }
 
         public async Task OnNext(object action)
@@ -45,6 +47,7 @@ namespace OpencastReplacement.Store
                 var videofilter = Builders<Video>.Filter.Empty;
                 var Videos = await (await videocollection.FindAsync(videofilter)).ToListAsync();
                 var videos = System.Collections.Immutable.ImmutableList<Video>.Empty.AddRange(Videos);
+                _logger.LogInformation($"Loaded {videos.Count} videos from the database.");
                 _store.Put(new Actions.VideoSuccess(videos: videos));
             } catch(Exception ex)
             {

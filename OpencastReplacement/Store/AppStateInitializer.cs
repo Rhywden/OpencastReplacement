@@ -9,10 +9,12 @@ namespace OpencastReplacement.Store
     public class AppStateInitializer : IStateInitializer<AppState>
     {
         private IMongoConnection _connection;
+        private ILogger<AppStateInitializer> _logger;
 
-        public AppStateInitializer(IMongoConnection connection)
+        public AppStateInitializer(IMongoConnection connection, ILogger<AppStateInitializer> logger)
         {
             _connection = connection;
+            _logger = logger;
         }
 
         public async Task<AppState> GetInitialStateAsync()
@@ -32,6 +34,7 @@ namespace OpencastReplacement.Store
                 Tags = ImmutableList<Models.Tag>.Empty.AddRange(Tags),
                 Series = ImmutableList<Series>.Empty.AddRange(Series),
             };
+            _logger.LogInformation($"Initialized AppState with {store.Videos.Count} videos, {store.Tags.Count} tags, and {store.Series.Count} series.");
             return store;
         }
     }

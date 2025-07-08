@@ -8,9 +8,11 @@ namespace OpencastReplacement
     public sealed class InMemoryTicketStore : ITicketStore
     {
         private readonly IMemoryCache _cache;
-        public InMemoryTicketStore(IMemoryCache cache)
+        private readonly ILogger<InMemoryTicketStore> _logger;
+        public InMemoryTicketStore(IMemoryCache cache, ILogger<InMemoryTicketStore> logger)
         {
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
         public Task RemoveAsync(string key)
         {
@@ -32,7 +34,9 @@ namespace OpencastReplacement
 
         public Task<string> StoreAsync(AuthenticationTicket ticket)
         {
-            var key = ticket.Principal.Claims.First(c => c.Type == "name").Value;
+            string claimsList = string.Join(", ", ticket.Principal.Claims.Select(c => $"{c.Type}: {c.Value}"));
+            _logger.LogInformation($"Storing authentication ticket with claims: {claimsList}");
+            var key = ticket.Principal.Claims.First(c => c.Type == "preferred_username").Value;
             _cache.Set(key, ticket);
             return Task.FromResult(key);
         }

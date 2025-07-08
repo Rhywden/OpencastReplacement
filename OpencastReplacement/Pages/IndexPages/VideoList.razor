@@ -42,7 +42,7 @@
 </MudPaper>
 
 
-@foreach(var vid in _videosFilteredByOwner)
+@foreach(var vid in _videosFiltered)
 {
     <MudPaper Class="pa-3 ma-3">
         <MudGrid>
@@ -163,6 +163,7 @@
     private async Task LinkToClipboard(Guid id)
     {
         string link = $"{baseUrl}/Video?id={id}";
+        Console.WriteLine($"Link: {link}");
         await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", link);
         //Snackbar.Add("Id in die Zwischenablage kopiert!");
     }
