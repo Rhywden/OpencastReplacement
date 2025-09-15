@@ -18,7 +18,7 @@ namespace OpencastReplacement.Data
             BsonClassMap.RegisterClassMap<Video>();
             BsonClassMap.RegisterClassMap<Series>();
             Client = new MongoClient(connectionString);
-            database = env.IsDevelopment() ? "videoserver_dev" : "videoserver";
+            database = env.IsDevelopment() ? "videoserver" : "videoserver";
         }
 
         public IMongoCollection<Models.Tag> GetTagCollection()

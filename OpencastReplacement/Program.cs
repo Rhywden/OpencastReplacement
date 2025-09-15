@@ -5,18 +5,17 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 using Microsoft.IdentityModel.Tokens;
 using MudBlazor.Services;
-using OpencastReplacement;
 using OpencastReplacement.Data;
-using OpencastReplacement.Models;
 using OpencastReplacement.Services;
 using OpencastReplacement.Store;
 using RudderSingleton;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,7 +33,12 @@ if (!Environment.IsDevelopment())
 {
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
-        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        // Ensure redirect_uri is built from the public URL when behind a reverse proxy
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+        // In container/reverse-proxy setups, if KnownNetworks/Proxies aren't set, headers can be ignored.
+        // Clear to allow all (or set your specific proxies/networks here for stricter security).
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
     });
 }
 
@@ -71,12 +75,10 @@ var test = System.Environment.GetEnvironmentVariable("OIDC_AUTHORITY");
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-}).AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, opts =>
-{
-    
-})
+    // Use cookies for interactive users; OIDC challenges will redirect to the identity provider
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+}).AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
 .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
 {
     options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -112,23 +114,85 @@ builder.Services.AddAuthentication(options =>
             context.HandleResponse();
             context.Response.Redirect("/");
             return Task.CompletedTask;
-        }
+        },
+        OnUserInformationReceived = ctx =>
+        {
+            try
+            {
+                var root = ctx.User.RootElement;
+                if (root.TryGetProperty("groups", out var groups) && groups.ValueKind == JsonValueKind.Array)
+                {
+                    var id = (ClaimsIdentity)ctx.Principal!.Identity!;
+                    foreach (var g in groups.EnumerateArray())
+                    {
+                        var value = g.GetString();
+                        if (!string.IsNullOrWhiteSpace(value))
+                        {
+                            id.AddClaim(new Claim("groups", value));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("OIDC").LogWarning("Failed to process OIDC userinfo groups: {ex}", ex);
+            }
+            return Task.CompletedTask;
+        },
+        OnTicketReceived = ctx =>
+        {
+            var id = (ClaimsIdentity)ctx.Principal!.Identity!;
+
+            // Gather groups from claims
+            var groupsValues = ctx.Principal.Claims
+                .Where(c => string.Equals(c.Type, "groups", StringComparison.OrdinalIgnoreCase))
+                .Select(c => c.Value)
+                .ToArray();
+
+            // Determine roles by explicit criteria
+            var rolesToAdd = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            var preferredUsername = ctx.Principal.FindFirst("preferred_username")?.Value
+                ?? ctx.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? ctx.Principal.Identity?.Name;
+            if (!string.IsNullOrWhiteSpace(preferredUsername) && new[] { "has", "eve", "pe" }.Contains(preferredUsername, StringComparer.OrdinalIgnoreCase))
+            {
+                rolesToAdd.Add("Admin");
+            }
+
+            if (groupsValues.Any(g => string.Equals(g, "lehrer", StringComparison.OrdinalIgnoreCase)))
+            {
+                rolesToAdd.Add("Teacher");
+            }
+
+            if (groupsValues.Any(g => string.Equals(g, "schueler", StringComparison.OrdinalIgnoreCase)))
+            {
+                rolesToAdd.Add("Pupil");
+            }
+
+            // Add role claims (avoid duplicates)
+            foreach (var role in rolesToAdd)
+            {
+                if (!id.HasClaim(ClaimTypes.Role, role))
+                    id.AddClaim(new Claim(ClaimTypes.Role, role));
+            }
+
+            // Derive classroom claim now that roles may be present
+            return Task.CompletedTask;
+        },
     };
 });
-
-builder.Services.AddTransient<ITicketStore, InMemoryTicketStore>();
-builder.Services.AddSingleton<IPostConfigureOptions<CookieAuthenticationOptions>, ConfigureCookieAuthenticationOptions>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
+    // Process X-Forwarded-* headers from the reverse proxy BEFORE anything that relies on request scheme/host
+    app.UseForwardedHeaders();
+
     app.UseExceptionHandler("/Error");
-    app.UseForwardedHeaders(new ForwardedHeadersOptions
-    {
-        ForwardedHeaders = ForwardedHeaders.XForwardedProto
-    });
+    // When behind a reverse proxy, scheme will be set by the forwarded headers above.
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
