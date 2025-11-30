@@ -90,7 +90,10 @@ builder.Services.AddAuthentication(options =>
     options.Scope.Add("openid");
     options.Scope.Add("profile");
     options.Scope.Add("email");
-    options.Scope.Add("gruppen");
+    if (System.Environment.GetEnvironmentVariable("ROLE_CLAIM_TYPE") is not null)
+    {
+        options.Scope.Add("gruppen");
+    }
     options.Scope.Add("offline_access");
     options.ClaimActions.Add(new JsonKeyClaimAction("role", string.Empty, "role"));
     options.SaveTokens = true;
